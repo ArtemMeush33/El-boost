@@ -1,5 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="EICR Voice"><meta name="theme-color" content="#09090b"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>EICR Voice</title>
+<script src="config.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap">
@@ -123,11 +124,12 @@ select.input{appearance:none}
   <header class="top">
     <button class="btn btn-ghost btn-icon" id="back" aria-label="Back to reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
     <div class="title"><b id="rAddr"></b><span id="rTpl"></span></div>
+    <button class="btn btn-ghost btn-icon" id="exp" aria-label="Export report as PDF" style="margin-left:auto;flex:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3"/></svg></button>
   </header>
   <div class="card grid" id="grid"></div>
   <!-- kept for later; not shown in this simplified view -->
   <div hidden><span id="pct"></span><i id="meter"></i><span id="counts"></span><div id="legend"></div><div id="log"></div>
-    <button id="exp"></button><button id="del"></button><span id="delConfirm"><button id="delYes"></button></span></div>
+    <button id="del"></button><span id="delConfirm"><button id="delYes"></button></span></div>
 </section>
 
 <div class="bar" id="homeBar"><div><button class="btn btn-primary btn-lg" id="newBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create new</button></div></div>
@@ -179,7 +181,7 @@ select.input{appearance:none}
 
 <!-- EXPORT PREVIEW (kept for later) -->
 <div class="preview" id="preview" hidden>
-  <div class="pbar"><button class="btn btn-outline" id="pClose">Close</button><span id="pInfo"></span><button class="btn btn-primary" id="pSave">Save file</button></div>
+  <div class="pbar"><button class="btn btn-outline" id="pClose">Close</button><span id="pInfo"></span><button class="btn btn-primary" id="pSave">Save PDF</button></div>
   <iframe id="pFrame" title="Report preview"></iframe>
 </div>
 
@@ -596,19 +598,125 @@ function applyOps(res){
   return {n,bad,issues};
 }
 
+/* ---------- AI server (optional) ---------- */
+const AI_URL=(()=>{ try{ return localStorage.getItem("eicr.ai_url")||""; }catch(e){ return ""; } })()||window.EICR_AI_URL||"";
+
+/* ---------- built-in parser: works with no AI and no internet ----------
+   Understands notes like:
+   "ze 0.21, pfc 0.61, TN-C-S"            "board 2, circuit 3 zs 0.5 r1 plus r2 0.29"
+   "circuit 14 garage sockets b32 cable 2.5 1.5"   "insulation greater than 999, rcd 23 ms, polarity ok"
+   "item 4.3 c3"   "section 2 not applicable"   "observation c3 no SPD protection"   "overall satisfactory" */
+const MAXZS={B6:"5.82",B10:"3.50",B16:"2.18",B20:"1.75",B32:"1.10",B40:"0.87",B50:"0.70",C6:"2.91",C10:"1.75",C16:"1.10",C20:"0.87",C32:"0.54",C40:"0.44"};
+function normSpeech(t){
+  let s=" "+String(t).toLowerCase().replace(/[–—]/g,"-")+" ";
+  s=s.replace(/greater than\s*(9\s*9\s*9|nine nine nine|999)|over ?range|more than 999|infinity|>\s*999|\+999/g," 999 ");
+  const W={zero:0,nought:0,nil:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,hundred:100};
+  s=s.replace(/\bpoint oh\b/g,"point 0").replace(/\b(zero|nought|nil|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|hundred)\b/g,w=>" "+W[w]+" ");
+  s=s.replace(/\b([2-6]0) ([1-9])\b(?!\s*point)/g,(m,a,b)=>String(+a+ +b));
+  s=s.replace(/(\d+)?\s*\bpoint\s+(\d(?:\s+\d(?!\d))*)/g,(m,a,b)=>" "+(a||"0")+"."+b.replace(/\s+/g,"")+" ");
+  s=s.replace(/(^|\s)\.(\d)/g,"$1 0.$2");
+  s=s.replace(/\b(r|are)\s*(1|one)\s*(\+|plus|and)\s*(r|are)\s*(2|two)\b/g," r1r2 ").replace(/\br\s*1\s*\+\s*r\s*2\b/g," r1r2 ");
+  s=s.replace(/\b(r|are)\s+(1|2|n)\b/g," r$2 ").replace(/\b(zed|z|said)\s*s\b/g," zs ").replace(/\b(zed|z)\s*e\b/g," ze ").replace(/\bzee\b/g," ze ");
+  s=s.replace(/\bt\s*-?\s*n\s*-?\s*c\s*-?\s*s\b|\bpme\b/g," tncs ").replace(/\bt\s*-?\s*n\s*-?\s*s\b/g," tns ").replace(/\bt\s+t\b/g," tt ");
+  s=s.replace(/\bn\s*\/\s*a\b|\bnot applicable\b|\bn a\b/g," na ").replace(/\bnot verified\b/g," nv ").replace(/\blimitation\b/g," lim ");
+  s=s.replace(/\b(c|see|sea)\s*-?\s*([123])\b/g," c$2 ").replace(/\bf\s*i\b|further investigation/g," fi ");
+  s=s.replace(/\bd\s*b\s*(\d+)\b/g," board $1 ").replace(/\b(type\s+)?([bcd])\s*-?\s*(\d{1,2})\b(?!\s*\.)/g," $2$3 ");
+  s=s.replace(/\b(mega?\s*ohms?|meg|ohms?|milli\s*seconds?|ms|milli\s*amps?|ma|kilo\s*amps?|ka|amps?|volts?|mm\s*squared|mm2|mm|ω|mω)\b/g," ");
+  return s.replace(/[,;:]+/g," , ").replace(/\s+/g," ").trim();
+}
+function localParse(text){
+  const t=normSpeech(text).split(" ").filter(Boolean), ops=[], said=[];
+  const NUM=/^-?\d+(\.\d+)?$/, FILL=new Set(["is","of","at","=","was","reads","reading","value","the","to","equals","on","by"]);
+  const OK=new Set(["ok","okay","tick","ticked","good","pass","passed","fine","yes","acceptable","correct","✓"]);
+  const outcome=w=>OK.has(w)?"✓":w==="na"?"N/A":/^c[123]$/.test(w)?w.toUpperCase():w==="fi"?"FI":w==="lim"?"LIM":w==="nv"?"NV":null;
+  const KW=new Set(["board","circuit","way","ze","zs","pfc","ipf","pscc","prospective","r1r2","r1","rn","r2","insulation","ir","megger","rcd","trip","polarity","test","cable","live","cpc","voltage","frequency","max","maximum","item","section","observation","overall","tncs","tns","tt",","]);
+  let board=lastBoard, circ=null, i=0;
+  const num=(j)=>{ while(j<t.length&&FILL.has(t[j])) j++; return NUM.test(t[j]||"")?[t[j],j+1]:[null,j]; };
+  const cop=(field,value,label)=>{ if(circ==null){ return false; } ops.push({op:"circuit",board,ref:circ,field,value}); said.push(label+" "+value); return true; };
+  while(i<t.length){ const w=t[i];
+    if(w==="board"){ const [v,j]=num(i+1); if(v){ board="DB"+v; said.push("board "+v); circ=null; i=j; continue; } }
+    if(w==="circuit"||w==="way"){ const [v,j]=num(i+1); if(v){ circ=v; i=j; const nm=[];
+        while(i<t.length&&!KW.has(t[i])&&!NUM.test(t[i])&&!/^[bcd]\d+$/.test(t[i])) nm.push(t[i++]);
+        const b=cur.data.boards.find(x=>String(x.ref).toLowerCase().replace(/[^a-z0-9]/g,"").startsWith(board.toLowerCase()));
+        const ex=b&&b.circuits.find(r=>String(r[0])===String(v));
+        if(nm.length&&(!ex||!ex[1])){ const d=nm.join(" "); ops.push({op:"circuit",board,ref:v,field:"designation",value:d.charAt(0).toUpperCase()+d.slice(1)}); }
+        said.push("circuit "+v); continue; } }
+    if(w==="ze"){ const [v,j]=num(i+1); if(v){ ops.push({op:"set",path:"supply.ze_ohm",value:v}); said.push("Ze "+v); i=j; continue; } }
+    if(["pfc","ipf","pscc","prospective"].includes(w)){ let k=i+1; while(["fault","current","pfc"].includes(t[k])) k++; const [v,j]=num(k);
+      if(v){ ops.push({op:"set",path:"supply.pfc_ka",value:v}); said.push("PFC "+v); i=j; continue; } }
+    if(w==="tncs"||w==="tns"||w==="tt"){ const v={tncs:"TN-C-S (PME)",tns:"TN-S",tt:"TT"}[w]; ops.push({op:"set",path:"supply.earthing",value:v}); said.push(v); i++; continue; }
+    if(w==="voltage"||w==="frequency"){ const [v,j]=num(i+1); if(v){ ops.push({op:"set",path:"supply."+w,value:v}); said.push(w+" "+v); i=j; continue; } }
+    if((w==="max"||w==="maximum")&&t[i+1]==="demand"){ const [v,j]=num(i+2); if(v){ ops.push({op:"set",path:"particulars.max_demand_a",value:v}); said.push("max demand "+v); i=j; continue; } }
+    if(w==="zs"){ const [v,j]=num(i+1); if(v){ if(circ!=null) cop("zs",v,"Zs"); else { ops.push({op:"board",board,field:"zs",value:v}); said.push(board+" Zs "+v); } i=j; continue; } }
+    if(w==="r1r2"){ const [v,j]=num(i+1); if(v&&cop("r1r2",v,"R1+R2")){ i=j; continue; } }
+    if(w==="r1"||w==="rn"||w==="r2"){ const [v,j]=num(i+1); if(v&&cop(w,v,w)){ i=j; continue; } }
+    if(w==="insulation"||w==="ir"||w==="megger"){ let k=i+1; while(["resistance","test"].includes(t[k])) k++;
+      const pair=(t[k]||"")+" "+(t[k+1]||""), map={"live live":23,"line line":23,"live neutral":24,"line neutral":24,"live earth":25,"line earth":25,"neutral earth":26};
+      const col=map[pair]; if(col) k+=2; const [v,j]=num(k);
+      if(v&&circ!=null){ (col?[col]:[24,25,26]).forEach(c=>ops.push({op:"circuit",board,ref:circ,field:COLS[c],value:v})); ops.push({op:"circuit",board,ref:circ,field:"test_v",value:"500",soft:true}); said.push("insulation "+v); i=j; continue; } }
+    if(w==="rcd"||w==="trip"){ let k=i+1; while(["trip","time","disconnection","test"].includes(t[k])) k++; const [v,j]=num(k); if(v&&cop("rcd_ms",v,"RCD")){ said[said.length-1]+=" ms"; i=j; continue; } }
+    if(w==="polarity"){ const o=outcome(t[i+1])||(/^(fail|failed|wrong|reversed)$/.test(t[i+1]||"")?"✗":null); if(o&&cop("polarity",o==="✗"?"✗":"✓","polarity")){ i+=2; continue; } }
+    if(w==="test"&&t[i+1]==="button"){ const o=outcome(t[i+2]); if(o&&cop("rcd_btn","✓","test button")){ i+=3; continue; } }
+    if(/^[bc]\d+$/.test(w)&&circ!=null){ const T=w[0].toUpperCase(), A=w.slice(1);
+      ops.push({op:"circuit",board,ref:circ,field:"ocpd_type",value:T},{op:"circuit",board,ref:circ,field:"ocpd_rating",value:A},
+        {op:"circuit",board,ref:circ,field:"ocpd_bs",value:"60898",soft:true});
+      if(MAXZS[T+A]) ops.push({op:"circuit",board,ref:circ,field:"max_zs",value:MAXZS[T+A],soft:true});
+      said.push(T+A); i++; continue; }
+    if(w==="cable"||w==="live"){ const [a,j]=num(i+1); if(a&&circ!=null){ cop("live",a,"cable"); let k=j; if(t[k]==="and"||t[k]==="cpc"||t[k]===",") k++; if(t[k]==="cpc") k++; const [b,j2]=num(k);
+        if(b){ cop("cpc",b,"/"); said.splice(-2,2,`cable ${a}/${b}`); i=j2; } else i=j; continue; } }
+    if(w==="item"||w==="section"){ const [v,j]=num(i+1); let id=v, k=j; if(id&&/^[a-e]$/.test(t[k]||"")) id+=t[k++];
+      const o=outcome(t[k]); if(id&&o){ ops.push({op:"insp",id,value:o}); said.push(w+" "+id+" "+o); i=k+1; continue; } }
+    if(w==="observation"){ const o=outcome(t[i+1]); if(o&&/^(C[123]|FI)$/.test(o)){ const rest=t.slice(i+2).filter(x=>x!==",").join(" ");
+        const txt=rest.charAt(0).toUpperCase()+rest.slice(1)+(rest&&!/[.!?]$/.test(rest)?".":""); ops.push({op:"obs",code:o,text:txt}); said.push(o+" observation"); break; } }
+    if(w==="overall"){ const v=t[i+1]; if(v==="satisfactory"||v==="unsatisfactory"){ ops.push({op:"set",path:"summary.overall",value:v.toUpperCase()}); said.push("overall "+v); i+=2; continue; } }
+    i++;
+  }
+  // soft values only fill empty cells
+  const d=cur.data, outOps=ops.filter(o=>{ if(!o.soft) return true;
+    const b=d.boards.find(x=>String(x.ref).toLowerCase().replace(/[^a-z0-9]/g,"").startsWith(String(o.board).toLowerCase()));
+    const r=b&&b.circuits.find(x=>String(x[0])===String(o.ref)); return !r||isEmpty(r[COLS.indexOf(o.field)])||r[COLS.indexOf(o.field)]==="N/A"; });
+  const real=outOps.filter(o=>!(o.op==="circuit"&&o.field==="designation"));
+  return {ops:outOps, say:said.length?said.join(", ").slice(0,90):"Nothing recognised",
+    unclear:real.length||outOps.length?"":"couldn't match: "+text.slice(0,60)};
+}
+
+/* phone speech recognition, used when Claude's own mic isn't available */
+function webSpeechDict(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return null;
+  let rec=null; const cb={p(){},f(){},s(){}};
+  const api={ lastError:null, onPartial(f){cb.p=f;}, onFinal(f){cb.f=f;}, onState(f){cb.s=f;},
+    start({language}={}){ return new Promise((res,rej)=>{
+      rec=new SR(); rec.lang=language||"en-GB"; rec.interimResults=true; rec.continuous=true;
+      let started=false; api.lastError=null;
+      rec.onstart=()=>{ started=true; cb.s({state:"listening"}); res(); };
+      rec.onresult=e=>{ let interim=""; for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) cb.f({text:r[0].transcript}); else interim+=r[0].transcript; } cb.p({text:interim}); };
+      rec.onerror=e=>{ const code=/not-allowed|service-not-allowed/.test(e.error)?"not_granted":e.error; api.lastError=code; if(!started) rej({code}); };
+      rec.onend=()=>cb.s({state:"idle"});
+      setTimeout(()=>{ if(!started){ try{ rec.abort(); }catch(e){} rej({code:"timeout"}); } },4000);
+      try{ rec.start(); }catch(err){ rej({code:"start_failed"}); } }); },
+    stop(){ try{ rec&&rec.stop(); }catch(e){} return Promise.resolve(); } };
+  return api;
+}
+
 async function send(){
   const text=$("say").value.trim(); if(!text) return;
   $("say").value=""; $("sayDrawer").hidden=true; $("caption").hidden=true; log("u",text);
-  if(!sample){ log("w","AI isn't available in this view. Tap a square to type a value."); return; }
   const tb=$("talk"); tb.disabled=true; $("talkLbl").textContent="Thinking…";
   try{
-    const res=await sample.json(prompt(text),{modelTier:"quick",cache:false});
+    let res;
+    if(sample) res=await sample.json(prompt(text),{modelTier:"quick",cache:false});
+    else if(AI_URL){
+      try{ const r=await fetch(AI_URL,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt:prompt(text)})});
+        if(!r.ok) throw new Error("ai "+r.status); res=await r.json(); }
+      catch(e){ res=localParse(text); res.say="(offline) "+res.say; }
+    } else res=localParse(text);
     const r=applyOps(res);
     log("a",(res.say||"done")+`  [${r.n} field${r.n===1?"":"s"}]`);
     r.issues.forEach(i=>log(i[0]==="issue"?"e":"w",i[1]));
     if(res.unclear) log("w","unclear: "+res.unclear);
     if(r.bad.length) log("w","skipped: "+r.bad.join(", "));
     if(tts&&res.say) tts.speak(res.say).catch(()=>{});
+    else if(res.say&&r.n&&window.speechSynthesis){ try{ const u=new SpeechSynthesisUtterance(res.say.replace(/^\(offline\) /,"")); u.lang="en-GB"; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
   }catch(e){
     if(e&&e.code==="not_granted"){ sample=null; log("e","AI access was declined. Tap cells to type values."); }
     else if(e&&e.code==="rate_limited") log("e","Too many notes at once. Wait a few seconds and send again.");
@@ -627,7 +735,8 @@ $("talk").addEventListener("click",()=>{
     finalBuf=""; $("say").value=""; listening=true; updateTalk();
     $("caption").textContent="Listening…"; $("caption").hidden=false;
     dict.start({language:"en-GB"}).catch(e=>{ listening=false; $("caption").hidden=true; updateTalk();
-      if(e&&e.code==="not_granted"){ dict=null; log("w","Microphone declined. Use the keyboard mic instead."); } });
+      if(e&&e.code==="not_granted"){ dict=null; log("w","Microphone declined. Use the keyboard mic instead."); }
+      $("sayDrawer").hidden=false; setTimeout(()=>$("say").focus(),50); });
     return; }
   $("sayDrawer").hidden=false; setTimeout(()=>$("say").focus(),50);
 });
@@ -673,9 +782,18 @@ $("exp").addEventListener("click",async()=>{
   }catch(e){ log("e","Could not load the report template. Check your connection and try again."); }
 });
 $("pClose").addEventListener("click",()=>{ $("preview").hidden=true; $("pFrame").srcdoc=""; });
+function printExport(){ // outside Claude: open the report in a new tab and bring up the phone's Print / Save as PDF sheet
+  const html=exportHTML.replace("</body>",'<script>addEventListener("load",()=>setTimeout(()=>print(),400))<\/script></body>');
+  const url=URL.createObjectURL(new Blob([html],{type:"text/html"}));
+  const w=window.open(url,"_blank");
+  if(!w){ const a=document.createElement("a"); a.href=url; a.download=exportName; document.body.append(a); a.click(); a.remove(); }
+  $("pInfo").textContent="In the print screen, choose Save to Files / Save as PDF.";
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
 $("pSave").addEventListener("click",async()=>{
-  const dl=window.claude&&await claude.use("downloads");
-  if(!dl){ $("pInfo").textContent="Saving files is not available in this view."; return; }
+  if(!(window.claude&&claude.use)){ printExport(); return; }
+  const dl=await claude.use("downloads");
+  if(!dl){ printExport(); return; }
   try{ await dl.save({filename:exportName,data:new Blob([exportHTML],{type:"text/html"})}); $("pInfo").textContent="Saved. Open it on the device to print or email as PDF."; }
   catch(e){ $("pInfo").textContent=e&&e.code==="declined"?"Save cancelled.":"Could not save ("+(e&&e.code||"error")+")."; }
 });
@@ -685,12 +803,14 @@ load(); renderHome();
 if(window.claude&&claude.use){
   claude.use("sample").then(s=>{ sample=s; });
   claude.use("tts").then(t=>{ tts=t; });
-  claude.use("dictation").then(d=>{ dict=d; if(!d){ updateTalk(); return; }
-    d.onPartial(({text})=>{ $("say").value=(finalBuf+" "+text).trim(); $("caption").textContent=$("say").value||"Listening…"; });
-    d.onFinal(({text})=>{ finalBuf=(finalBuf+" "+text).trim(); $("say").value=finalBuf; $("caption").textContent=finalBuf; });
-    d.onState(({state})=>{ if(state==="idle"&&listening){ listening=false; updateTalk(); if($("say").value.trim()) send(); else $("caption").hidden=true; } else updateTalk(); });
-    updateTalk(); });
-}
+  claude.use("dictation").then(d=>wireDict(d||webSpeechDict()));
+} else wireDict(webSpeechDict());
+function wireDict(d){ dict=d; if(!d){ updateTalk(); return; }
+  d.onPartial(({text})=>{ $("say").value=(finalBuf+" "+text).trim(); $("caption").textContent=$("say").value||"Listening…"; });
+  d.onFinal(({text})=>{ finalBuf=(finalBuf+" "+text).trim(); $("say").value=finalBuf; $("caption").textContent=finalBuf; });
+  d.onState(({state})=>{ if(state==="idle"&&listening){ listening=false; updateTalk(); if($("say").value.trim()) send(); else { $("caption").hidden=true;
+      if(d.lastError&&d.lastError!=="no-speech"&&d.lastError!=="aborted"){ if(d.lastError==="not_granted") dict=null; $("sayDrawer").hidden=false; setTimeout(()=>$("say").focus(),50); } } } else updateTalk(); });
+  updateTalk(); }
 </script>
 
 </body></html>
