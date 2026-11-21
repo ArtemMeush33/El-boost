@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1720">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="El-boost">
+<title>El-boost</title>
+<style>
+  :root { --bg:#0f1720; --card:#17212c; --text:#eef2f6; --muted:#8a99a8; --accent:#f5c518; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text);
+         min-height:100dvh; padding: max(24px, env(safe-area-inset-top)) 16px 24px; display:flex; flex-direction:column; gap:20px; }
+  header { display:flex; align-items:center; gap:10px; }
+  .bolt { width:36px; height:36px; border-radius:10px; background:var(--accent); display:grid; place-items:center; color:#111; font-weight:800; }
+  h1 { font-size:1.4rem; }
+  .card { background:var(--card); border-radius:16px; padding:18px; }
+  .card h2 { font-size:1rem; margin-bottom:6px; }
+  .card p { color:var(--muted); font-size:.95rem; line-height:1.45; }
+  footer { margin-top:auto; color:var(--muted); font-size:.8rem; text-align:center; }
+</style>
+</head>
+<body>
+  <header><div class="bolt">⚡</div><h1>El-boost</h1></header>
+  <div class="card"><h2>It works 🎉</h2><p>This is the starter page. Add it to your home screen and it will update every time new changes are pushed.</p></div>
+  <div class="card"><h2>Coming next</h2><p>The app screens will go here.</p></div>
+  <footer>v0.1 · starter</footer>
+</body>
+</html>
