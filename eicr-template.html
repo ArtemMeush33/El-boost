@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EICR Digital Template</title>
+<style>
+:root{
+  --brand:#6a0f9e; --fill:#e4e4e4; --line:#333; --ok:#5fe07a; --c3:#f39a55; --c2:#e8554e; --c1:#b3141b; --fi:#4d8be8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#7d7d85;font-family:Arial,Helvetica,sans-serif;font-size:8pt;color:#111}
+.toolbar{position:sticky;top:0;z-index:5;background:#222;color:#fff;padding:8px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.toolbar button{background:var(--brand);color:#fff;border:0;padding:7px 14px;border-radius:4px;font-weight:bold;cursor:pointer}
+.toolbar span{opacity:.75;font-size:9pt}
+.pages{overflow-x:auto;padding:10px 0}
+.page{width:210mm;min-height:297mm;padding:7mm 9mm 13mm;background:#fff;margin:0 auto 10mm;position:relative;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.page.land{width:297mm;min-height:210mm;page:land}
+.pfoot{position:absolute;left:9mm;right:9mm;bottom:6mm;display:flex;justify-content:space-between;align-items:flex-end;font-size:7pt;font-weight:bold}
+.pfoot .pn{font-size:10pt}
+@page{size:A4;margin:0}
+@page land{size:A4 landscape;margin:0}
+@media print{
+  body{background:#fff}.toolbar{display:none}.pages{padding:0;overflow:visible}
+  .page{margin:0;box-shadow:none;break-after:page}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* header */
+.hdr{display:flex;gap:6mm;margin-bottom:4mm}
+.logo{width:26mm;height:26mm;border:1px dashed #aaa;display:flex;align-items:center;justify-content:center;text-align:center;color:#888;font-size:7pt}
+.hdr .meta{display:flex;gap:2mm;background:#ececec;padding:2mm 3mm;font-size:9pt;margin-bottom:2mm}
+.hdr .meta b{margin-right:3mm}.hdr .meta .grey{background:#d3d3d3;padding:0 2mm}
+.hdr h1{color:var(--brand);font-size:20pt;margin:1mm 0 0;line-height:1.15}
+.hdr .sub{color:#666;font-weight:bold;font-size:9pt;margin-top:1mm}
+/* sections */
+.sec{border:1.4px solid var(--line);margin-bottom:2mm}
+.sec>h2{background:var(--brand);color:#fff;margin:0;padding:1.3mm 3mm;font-size:10pt;display:flex;justify-content:space-between;align-items:center;gap:4mm}
+.sec>h2 small{font-size:6pt;font-weight:normal;max-width:60%;text-align:right}
+.sec>.b{background:var(--fill);padding:2mm}
+.row{display:flex;gap:2mm;align-items:center;margin-bottom:1.2mm;flex-wrap:nowrap}
+.row:last-child{margin-bottom:0}
+.lbl{font-weight:bold;white-space:nowrap}
+.lbl.n{font-weight:normal}
+.f{background:#fff;padding:1.4mm 2mm;min-height:6mm;flex:1;font-size:7.5pt;display:flex;align-items:center}
+.f.tall{min-height:9mm;align-items:flex-start}
+.f.c{justify-content:center}
+.box{display:inline-flex;align-items:center;justify-content:center;min-width:8mm;height:6mm;border:1px solid #555;background:#fff;font-size:7pt;padding:0 1mm}
+.verdict{background:#fff;font-size:12pt;font-weight:bold;text-align:center;padding:1.5mm;width:80mm;margin:1mm auto}
+.note{font-size:6pt;color:#333;line-height:1.35}
+.bold{font-weight:bold}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+.sig{height:9mm;background:#fff;display:flex;align-items:center;justify-content:center;color:#999;font-style:italic}
+/* observations */
+.bar{background:var(--brand);color:#fff;padding:5mm 6mm;display:flex;justify-content:space-between;align-items:center;margin-bottom:4mm}
+.bar h2{margin:0;font-size:15pt}.bar .r{text-align:right;font-size:9pt;line-height:1.6}
+table.obs{width:100%;border-collapse:collapse;font-size:8.5pt}
+table.obs th{background:#ececec;text-align:left;padding:2mm}
+table.obs td{border-bottom:1px solid #ccc;padding:2mm}
+.code{font-weight:bold;text-align:center;width:28mm}
+.ph{display:flex;gap:2mm;justify-content:flex-end}
+.ph div,.ph img{width:30mm;height:22mm;border:1px solid #ccc;background:#f2f2f2;object-fit:cover;display:flex;align-items:center;justify-content:center;color:#999;font-size:7pt}
+.obsitem{display:flex;gap:4mm;border-left:3px solid var(--c3);padding:2mm 3mm;margin-bottom:3mm}
+.chip{display:inline-block;padding:1mm 4mm;border-radius:2px;color:#111;font-weight:bold;margin-right:3mm}
+/* DB schedule */
+.dbh{display:grid;grid-template-columns:repeat(12,auto);border:1px solid var(--line);font-size:7pt}
+.dbh div{padding:1.2mm 1.5mm;border-right:1px solid #bbb;border-bottom:1px solid #bbb;display:flex;align-items:center}
+.dbh .k{background:#e8e8e8;font-weight:bold}
+table.ct{width:100%;border-collapse:collapse;font-size:6.3pt;table-layout:fixed}
+table.ct th,table.ct td{border:1px solid #555;text-align:center;padding:.8mm .3mm}
+table.ct th{background:#fff;font-weight:bold}
+table.ct th.v{height:30mm;vertical-align:bottom}
+table.ct th.v span{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap}
+table.ct td.d{text-align:center;font-size:6.6pt}
+.purple{background:var(--brand);color:#fff;font-weight:bold;padding:1.4mm 3mm;font-size:10pt}
+/* inspection schedule */
+.legend{background:#f1f1f3;border:1px solid #ddd;padding:2mm 3mm;display:grid;grid-template-columns:repeat(4,1fr);gap:1mm;font-size:7.5pt;margin-bottom:3mm}
+table.is{width:100%;border-collapse:collapse;font-size:8.5pt}
+table.is th{text-align:left;border-bottom:2px solid var(--brand);padding:1.5mm}
+table.is td{border-bottom:1px solid #ccc;padding:2mm 1.5mm;vertical-align:middle}
+table.is tr.sh td{background:#e6e7ea;font-weight:bold;font-size:10pt}
+table.is tr.sn td{font-style:italic;color:#666;font-size:7.5pt;border:0}
+table.is td.o{width:32mm}
+.out{display:block;border:1px solid #ccc;border-radius:2px;text-align:center;padding:1.5mm;font-weight:bold}
+.out.ok{background:var(--ok);border-color:var(--ok)}.out.C3{background:var(--c3);border-color:var(--c3)}
+.out.C2{background:var(--c2);color:#fff}.out.C1{background:var(--c1);color:#fff}.out.FI{background:var(--fi);color:#fff}
+/* guidance */
+.gtitle{background:#ddd;text-align:center;padding:4mm;margin:-9mm -9mm 6mm}
+.gtitle h2{margin:0;font-size:17pt}
+.gl{font-size:8pt;line-height:1.45;padding:0 4mm}
+table.codes{width:100%;border-collapse:collapse;margin-top:8mm;font-size:7.5pt}
+table.codes td,table.codes th{border:1px solid #555;text-align:center;padding:1.5mm}
+table.codes caption{background:var(--brand);color:#fff;font-weight:bold;padding:1mm}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="window.print()">Print / Save PDF</button>
+  <span>Layout is rendered from the JSON block <code>#report-data</code> — the AI only needs to fill that.</span>
+</div>
+<div class="pages" id="pages"></div>
+
+<!-- ======================= REPORT DATA (the only part the AI fills) ======================= -->
+<script type="application/json" id="report-data">
+{
+  "meta": { "date": "12/11/2026", "serial": "00000001", "scheme": "NAPIT" },
+  "contractor": {
+    "name": "Sample Electrical Ltd",
+    "address": "1 Test Park, Testtown, AB1 2CD",
+    "tel": "07000 000000", "email": "info@example.com", "web": "www.example.com",
+    "enrolment_no": "00000"
+  },
+  "client": { "name": "C/o Example Lettings Ltd", "address": "1 Sample Street, Testtown, AB1 2CD", "email": "N/A" },
+  "reason": "Electrical installation conditions check prior to tenancy agreement",
+  "inspection_dates": "12/11/2026",
+  "installation": {
+    "occupier": "Tenant", "address": "12 Example Road, Testtown, AB1 2CD",
+    "premises": "Residential", "premises_other": "N/A",
+    "wiring_age_years": "30", "alterations": "No", "alterations_age": "N/A",
+    "records_available": "No", "last_inspection": "N/A", "alt_supply": "N/A"
+  },
+  "extent": {
+    "covered": "The whole of the electrical installation",
+    "agreed_limitations": "None.", "agreed_with": "Client.", "position": "N/A",
+    "operational_limitations": "None."
+  },
+  "summary": { "general_condition": "The electrical installation in good condition.", "overall": "SATISFACTORY" },
+  "next_inspection": { "date": "12/11/2031", "reasons": "N/A" },
+  "declaration": {
+    "inspector_name": "JOHN SMITH", "inspector_position": "Electrical Engineer", "inspector_date": "12/11/2026",
+    "authoriser_name": "John Smith", "authoriser_date": "12/11/2026"
+  },
+  "supply": {
+    "earthing": "TN-C-S (PME)", "current": "AC", "conductors": "1 phase (3 wire)",
+    "voltage": "240", "frequency": "50", "pfc_ka": "0.610", "ze_ohm": "0.21",
+    "ocpd_bs": "BS 1362", "ocpd_type": "Fuse HBC - Type 2", "ocpd_rating": "100", "ocpd_breaking": "N/A",
+    "polarity_confirmed": "N/A"
+  },
+  "particulars": {
+    "means_of_earthing": "Distributor's facility",
+    "electrode_type": "N/A", "electrode_resistance": "N/A", "electrode_location": "N/A", "max_demand_a": "100",
+    "earthing_conductor": { "material": "Copper", "csa": "16", "verified": true },
+    "bonding_conductor": { "material": "Copper", "csa": "10", "verified": true },
+    "bonding": { "water": true, "gas": true, "oil": false, "steel": false, "other": false, "lightning": false },
+    "main_switch": { "bs": "60947-3", "poles": "2", "supply_material": "Copper", "supply_csa": "25",
+      "voltage": "240", "current": "100", "rated_time_delay": "N/A", "rcd_current": "N/A", "rcd_time": "N/A", "rcd_type": "N/A" }
+  },
+  "observations": [
+    { "code": "C3", "text": "17th edition plastic consumer unit.", "photos": ["", ""] },
+    { "code": "C3", "text": "No SPD protection.", "photos": [] }
+  ],
+  "boards": [
+    {
+      "ref": "DB1", "zs": "0.21", "ipf": "1.281", "main_switch_bs": "60947", "rating": "100", "spd": "N/A",
+      "supply_csa": "25", "earth_csa": "16", "location": "Hall Cupboard", "phase_seq": "✓",
+      "supplied_from": "Mains", "phases": "Single", "ocpd_bs": "BS 1361 Fuse HBC - Type 2", "ocpd_rating": "100",
+      "circuits": [
+        ["1","Main Switch",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"500",null,null,null,null,null,null,null,null,null],
+        ["2","Main Switch",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"500",null,null,null,null,null,null,null,null,null],
+        ["3","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"16","✓",null],
+        ["4","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"16","✓",null],
+        ["5","Shower","A","B",null,"6","2.5","0.4","60898","B","40","6","0.87","61008","A","30","32",null,null,null,"0.32",null,"500",null,"999","999","999","✓","0.52","16","✓",null],
+        ["6","Bath, kit heater","A","B",null,"1.0","1.0","0.4","60898","B","6","6","5.82","61008","AC","30","6",null,null,null,"0.26",null,"500",null,"999","999","999","✓","0.47","16","✓",null],
+        ["7","Immersion Heater","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","16",null,null,null,"0.45",null,"500",null,"999","999","999","✓","0.67","16","✓",null],
+        ["8","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"23","✓",null],
+        ["9","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"23","✓",null],
+        ["10","Sockets","A","B",null,"2.5","1.5","0.4","60898","B","32","6","1.10","61008","AC","30","32","0.46","0.46","0.67","0.3",null,"500",null,"999","999","999","✓","0.51","23","✓",null],
+        ["11","Cooker","A","B",null,"6","2.5","0.4","60898","B","32","6","1.10","61008","AC","30","32",null,null,null,"0.18",null,"500",null,"999","999","999","✓","0.39","23","✓",null],
+        ["12","Lights","A","B",null,"1.0","1.0","0.4","60898","B","6","6","5.82","61008","AC","30","6",null,null,null,"1.71",null,"500",null,"999","999","999","✓","0.47","23","✓",null],
+        ["13","Spare",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+      ]
+    },
+    {
+      "ref": "DB2 - Eco7", "zs": "Lim", "ipf": "Lim", "main_switch_bs": "60947", "rating": "100", "spd": "N/A",
+      "supply_csa": "25", "earth_csa": "16", "location": "Hall Cupboard", "phase_seq": "N/A",
+      "supplied_from": "Mains", "phases": "Single", "ocpd_bs": "BS 1361 Type 2b", "ocpd_rating": "100",
+      "circuits": [
+        ["1","Hall Heater","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.36",null,"500",null,"999","999","999","✓","0.57","Lim",null,null],
+        ["2","Lim","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.23",null,"500",null,"999","999","999","✓","0.44","Lim",null,null],
+        ["3","Lounge","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.29",null,"500",null,"999","999","999","✓","0.5","Lim",null,null],
+        ["4","Bed Heater","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.22",null,"500",null,"999","999","999","✓","0.43","Lim",null,null],
+        ["5","Spare",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+        ["6","Spare",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+      ]
+    }
+  ],
+  "instruments": { "efli": "0000000", "insulation": "0000000", "continuity": "0000000", "rcd": "0000000", "mft": "0000000", "other": "N/A" },
+  "remarks": "",
+  "inspection": {
+    "1.1":"✓","1.2":"✓","1.3":"✓","1.4":"✓","1.5":"NV","1.6":"LIM",
+    "3.1":"✓","3.3":"✓","3.4":"✓","3.5":"✓","3.6":"✓","3.7":"✓","3.8":"✓",
+    "4.1":"✓","4.2":"✓","4.3":"C3","4.4":"✓","4.5":"✓","4.6":"✓","4.7":"✓","4.8":"✓","4.9":"✓",
+    "4.12":"✓","4.13":"✓","4.14":"✓","4.15":"✓","4.16":"✓","4.17":"✓","4.18":"✓","4.19":"C3","4.20":"✓","4.23":"✓","4.24":"✓",
+    "5.1":"✓","5.2":"✓","5.3":"✓","5.5":"✓","5.6":"✓","5.7":"✓","5.8":"✓","5.9":"✓","5.10":"✓",
+    "5.12a":"✓","5.12b":"✓","5.12c":"✓","5.12d":"✓","5.12e":"✓",
+    "5.13":"✓","5.14":"✓","5.15":"✓","5.16":"✓",
+    "5.17a":"✓","5.17b":"✓","5.17c":"✓","5.17d":"✓",
+    "5.18":"✓","5.19":"✓","5.20":"✓","5.21":"✓",
+    "6.1":"✓","6.5":"✓","6.6":"✓","6.7":"✓","6.8":"✓"
+  }
+}
+</script>
+
+<script>
+/* ======================= FIXED FORM STRUCTURE ======================= */
+const SCHEDULE = [
+  {s:"1.0 INTAKE EQUIPMENT (VISUAL INSPECTION ONLY)", note:"An outcome against an item in this section, other than access to live parts, should not be used to determine the overall outcome", items:[
+    ["1.1","Condition of service cable"],["1.2","Condition of service head"],["1.3","Condition of distributor’s earthing arrangement"],
+    ["1.4","Condition of meter tails - Distributor/Consumer"],["1.5","Condition of metering equipment"],["1.6","Condition of isolator (where present)"]]},
+  {s:"2.0 PARALLEL OR SWITCHED ALTERNATIVE SOURCES OF SUPPLY", items:[
+    ["2.1","Presence of adequate arrangements where generator to operate as a switched alternative (551.6)"],
+    ["2.2","Dedicated earthing arrangement independent of that of the public supply (551.4.3.2.1)"],
+    ["2.3","Presence of adequate arrangements where generator to operate in parallel with the public supply system (551.7)"],
+    ["2.4","Correct connection of generator in parallel (551.7.2)"],["2.5","Compatibility of characteristics of means of generation (551.7.3)"],
+    ["2.6","Means to provide automatic disconnection of generator in the event of loss of public supply system or voltage or frequency deviation beyond declared values (551.7.4)"],
+    ["2.7","Means to prevent connection of generator in the event of loss of public supply system or voltage or frequency deviation beyond declared values (551.7.5)"],
+    ["2.8","Means to isolate generator from the public supply system (551.7.6)"]]},
+  {s:"3.0 EARTHING AND BONDING ARRANGEMENTS (411.3, Chapter 54)", items:[
+    ["3.1","Presence and condition of distributor’s earthing arrangement (542.1.2.1; 542.1.2.2)"],
+    ["3.2","Presence and condition of earth electrode connection where applicable (542.1.2.3)"],
+    ["3.3","Provision of earthing/bonding labels at all appropriate locations (514.13)"],
+    ["3.4","Adequacy of earthing conductor size (542.3, 543.1.1)"],["3.5","Accessibility and condition of earthing conductor at MET (543.3.2)"],
+    ["3.6","Adequacy of main protective bonding conductor sizes (544.1)"],
+    ["3.7","Condition and accessibility of main protective bonding conductor connections (411.3.1.2; 543.3.2; 544.1.2)"],
+    ["3.8","Accessibility and condition of other protective bonding connections (543.3.1; 543.3.2)"],
+    ["3.9","Adequacy of earthing conductor connections (542.3.2)"],["3.10","FELV - requirements satisfied (411.7; 411.7.1)"]]},
+  {s:"4.0 CONSUMER UNIT OR DISTRIBUTION BOARD", items:[
+    ["4.1","Adequacy of working space / accessibility to consumer unit / distribution board (132.12; 513.1)"],["4.2","Security of fixing (134.1.1)"],
+    ["4.3","Condition of enclosure(s) in terms of IP rating etc (416.2)"],["4.4","Condition of enclosure(s) in terms of fire rating etc (421.1.6; 421.1.201; 526.5)"],
+    ["4.5","Enclosure not damaged or deteriorated so as to impair safety (651.2)"],["4.6","Presence of main linked switch (as required by 462.1.201)"],
+    ["4.7","Operation of main switch - (functional check) (643.10)"],["4.8","Manual operation of circuit-breakers, RCDs and AFDDs to prove disconnection (643.10)"],
+    ["4.9","Correct identification of circuit details and protective devices, where required (514.8.1; 514.9.1)"],
+    ["4.10","Presence of RCD six-monthly test notice, where required (514.12.2)"],
+    ["4.11","Presence of alternative supply warning notice at or near consumer unit/distribution board (514.15)"],
+    ["4.12","Presence of other required labelling (please specify) (Section 514)"],
+    ["4.13","Compatibility of protective devices, bases and other components; correct type and rating (No signs of unacceptable thermal damage, arcing or overheating) (411.3.2; 411.4; 411.5; 411.6; Sections 432, 433, 434; 530.3.201; 537.1.1)"],
+    ["4.14","Single-pole switching or protective devices in line conductor only (132.14.1; 530.3.3; 643.6)"],
+    ["4.15","Protection against mechanical damage where cables enter consumer unit/distribution board (522.8.1; 522.8.5; 522.8.11)"],
+    ["4.16","Protection against electromagnetic effects where cables enter consumer unit/distribution board/enclosures (521.5.1)"],
+    ["4.17","RCD(s) provided for fault protection - includes RCBOs (411.4.204; 411.5.3; 531.3.3)"],
+    ["4.18","RCD(s) provided for additional protection/requirements - includes RCBOs (411.3.3; 415.1)"],
+    ["4.19","Confirmation of indication that SPD is functional (651.4)"],
+    ["4.20","Confirmation that ALL conductor connections, including connections to busbars, are correctly located in terminals and are tight and secure (526.1)"],
+    ["4.21","Adequacy/security of barriers (416.2)"],["4.22","Presence and effectiveness of obstacles (417.2)"],
+    ["4.23","Confirmation that integral test button/switch causes RCD(s) to trip when operated (functional check) (643.10)"],
+    ["4.24","Presence of next inspection recommendation label (514.12.1)"],
+    ["4.25","Confirmation of indication that AFDD(s) are operational (421.1.7; 532.6; 651.2(e))"]]},
+  {s:"5.0 FINAL CIRCUITS", items:[
+    ["5.1","Identification of conductors (514.3.1)"],["5.2","Cables correctly supported throughout their run (521.10.202; 522.8.5)"],
+    ["5.3","Condition of the insulation of live parts (416.1)"],
+    ["5.4","Non-sheathed cables protected by enclosure in conduit, ducting or trunking (521.10.1) To include the integrity of conduit and trunking systems (metallic and plastic)"],
+    ["5.5","Adequacy of cables for current-carrying capacity with regard for the type and nature of installation (Section 523)"],
+    ["5.6","Coordination between conductors and overload protective devices (433.1; 533.2.1)"],
+    ["5.7","Adequacy of protective devices: type and rated current for fault protection (411.3)"],
+    ["5.8","Presence and adequacy of circuit protective conductors (411.3.1.1; 543.1)"],
+    ["5.9","Wiring system(s) appropriate for the type and nature of the installation and external influences (Section 522)"],
+    ["5.10","Concealed cables installed in prescribed zones (see Section D. Extent and limitations) (522.6.202)"],
+    ["5.11","Concealed cables incorporating earthed armour or sheath, or run within earthed wiring system, or otherwise protected against mechanical damage from nails, screws and the like (see Section D. Extent and limitations) (522.6.204)"],
+    ["5.12","Provision of additional requirements for protection by RCD not exceeding 30 mA",true],
+    ["5.12a","For all socket-outlets of rating 32 A or less, unless an exception is permitted (411.3.3)",false,true],
+    ["5.12b","For the supply of mobile equipment not exceeding 32 A rating for use outdoors (411.3.3)",false,true],
+    ["5.12c","For cables concealed in walls at a depth of less than 50 mm (522.6.202; Table 52.1)",false,true],
+    ["5.12d","For cables concealed in walls/partitions containing metal parts regardless of depth (522.6.202; Table 52.1)",false,true],
+    ["5.12e","Final circuits supplying luminaires within domestic (household) premises (411.3.4)",false,true],
+    ["5.13","Provision of fire barriers, sealing arrangements and protection against thermal effects (Section 527)"],
+    ["5.14","Band II cables segregated or separated from Band I cables (528.1)"],["5.15","Cables segregated or separated from communication cabling (528.2)"],
+    ["5.16","Cables segregated or separated from non-electrical services (528.3)"],
+    ["5.17","Termination of cables at enclosures – indicate extent and location of sampling in Section D of the report (Section 526)",true],
+    ["5.17a","Connections soundly made and under no undue strain (526.6)",false,true],
+    ["5.17b","No basic insulation of a conductor visible outside enclosure (526.8)",false,true],
+    ["5.17c","Connections of live conductors adequately enclosed (526.5)",false,true],
+    ["5.17d","Adequately connected at the point of entry to enclosure (glands, bushes etc) (522.8.5)",false,true],
+    ["5.18","Condition of accessories including socket-outlets, switches and joint boxes (651.2(e))"],
+    ["5.19","Suitability of accessories for external influences (512.2)"],["5.20","Adequacy of working space/accessibility to equipment (132.12; 513.1)"],
+    ["5.21","Single-pole switching or protective devices in line conductors only (132.14.1; 530.3.3; 643.6)"],
+    ["5.22","Examination of cables for signs of unacceptable thermal or mechanical damage/deterioration (421.1; 522.6)"],
+    ["5.23","Where exposed to direct sunlight, cable of a suitable type (522.11.1)"],["5.24","Temperature rating of cable insulation (522.1.1; Table 52.2)"],
+    ["5.25","Adequacy of connections, including CPCs, within accessories and to fixed and stationary equipment (Section 526)"],
+    ["5.26","Presence, operation and correct location of appropriate devices for isolation and switching (Chapter 46; Section 537)"],
+    ["5.27","General condition of wiring systems (651.2)"],["5.28","Suitability of containment systems for continued use (including flexible conduit) (Section 522)"]]},
+  {s:"6.0 LOCATION(S) CONTAINING A BATH OR SHOWER", items:[
+    ["6.1","Additional protection for all low voltage (LV) circuits by RCD not exceeding 30 mA (701.411.3.3)"],
+    ["6.2","Where used as a protective measure, requirements for SELV or PELV met (701.414.4.5)"],
+    ["6.3","Shaver supply units comply with BS EN 61558-2-5 formerly BS 3535 (701.512.3)"],
+    ["6.4","Presence of supplementary bonding conductors, unless not required by BS 7671:2018 (701.415.2)"],
+    ["6.5","Low voltage (e.g. 230 V) socket-outlets sited at least 2.5 m from zone 1 (701.512.3)"],
+    ["6.6","Suitability of equipment for external influences for installed location in terms of IP rating (701.512.2)"],
+    ["6.7","Suitability of equipment for installation in a particular zone (701.512.3)"],
+    ["6.8","Suitability of current-using equipment for particular position within the location (701.55)"]]},
+  {s:"7.0 OTHER PART 7 SPECIAL INSTALLATIONS OR LOCATIONS", items:[
+    ["7.1","List all other special installations or locations present, if any (*Record separately the results of particular inspections applied)"]]},
+  {s:"8.0 PROSUMER’S LOW VOLTAGE ELECTRICAL INSTALLATION(S)", items:[
+    ["8.1","Where the installation includes additional requirements and recommendations relating to Chapter 82, additional inspection items should be added to the checklist"]]},
+  {s:"9.0 OTHER METHODS OF PROTECTION", note:"(Where any of the methods listed below are employed details are to be provided on separate sheets)", items:[
+    ["9.1","Non-conducting location (418.1)"],["9.2","Earth-free local equipotential bonding (418.2)"],["9.3","Electrical separation (Section 413; 418.3)"],
+    ["9.4","Double insulation (Section 412)"],["9.5","Reinforced insulation (Section 412)"]]}
+];
+
+const CIRCUIT_COLS = ["Circuit reference","Circuit designation","Type of wiring","Reference method","Number of points served","Live (mm²)","cpc (mm²)",
+  "Max disconnection time","Type BS (EN)","Type","Rating","Breaking capacity (kA)","Max permitted Zs (Ω)","Type BS (EN)","Type","IΔn (mA)","Rating (A)",
+  "r1 (line)","rn (neutral)","r2 (cpc)","(R1 + R2)","R2","Test voltage V","Live - Live (MΩ)","Live - Neutral (MΩ)","Live - Earth (MΩ)","Neutral - Earth (MΩ)",
+  "Polarity","Maximum measured Zs Ω","Disconnection time (ms)","Test button/ functionality","Manual test button/ functionality"];
+
+/* ======================= RENDERING ======================= */
+const D = JSON.parse(document.getElementById('report-data').textContent);
+const esc = v => (v===null||v===undefined||v==="") ? "N/A" : String(v).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const raw = v => (v===null||v===undefined) ? "" : String(v).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const box = on => `<span class="box">${on?"✓":"N/A"}</span>`;
+const pick = (val,opt) => box(val===opt);
+const sec = (title,body,small="") => `<div class="sec"><h2>${title}${small?`<small>${small}</small>`:""}</h2><div class="b">${body}</div></div>`;
+const foot = (land=false) => `<div class="pfoot"><span>Digital EICR template — based on the model forms in Appendix 6 of BS 7671 (as amended)</span><span class="pn"></span></div>`;
+const page = (html,land=false) => `<section class="page${land?" land":""}">${html}${foot(land)}</section>`;
+const bar = (title) => `<div class="bar"><h2>${title}</h2><div class="r">${esc(D.contractor.name)}<br>${esc(D.meta.serial)}</div></div>`;
+
+function p1(){
+  const i=D.installation, e=D.extent;
+  return page(`
+  <div class="hdr">
+    <div class="logo">Scheme logo<br>(${esc(D.meta.scheme)})</div>
+    <div style="flex:1">
+      <div class="meta"><b>Date</b>${esc(D.meta.date)}<span class="grey"><b>Certificate Serial No/Ref:</b></span><span style="flex:1;text-align:center">${esc(D.meta.serial)}</span></div>
+      <h1>${esc(D.contractor.name)}<br>Electrical Installation Condition Report</h1>
+      <div class="sub">(Requirements for Electrical Installations – BS 7671 IET 18th Edition Wiring Regulations)</div>
+    </div>
+  </div>
+  ${sec("A. DETAILS OF THE PERSON ORDERING THE REPORT",`
+    <div class="row"><span class="lbl" style="width:18mm">Name:</span><div class="f">${esc(D.client.name)}</div></div>
+    <div class="row"><span class="lbl" style="width:18mm">Address:</span><div class="f">${esc(D.client.address)} &nbsp;&nbsp; Email: ${esc(D.client.email)}</div></div>`)}
+  ${sec("B. REASON FOR PRODUCING THIS REPORT",`
+    <div class="row"><div class="f tall">${esc(D.reason)}</div></div>
+    <div class="row" style="justify-content:flex-end"><span class="lbl">Date(s) inspection and testing carried out:</span><div class="f c" style="flex:0 0 55mm">${esc(D.inspection_dates)}</div></div>`)}
+  ${sec("C. DETAILS OF THE INSTALLATION WHICH IS THE SUBJECT OF THIS REPORT",`
+    <div class="row"><span class="lbl n" style="width:22mm">Occupier:</span><div class="f">${esc(i.occupier)}</div></div>
+    <div class="row"><span class="lbl n" style="width:22mm">Address:</span><div class="f">${esc(i.address)}</div></div>
+    <div class="row"><span class="lbl n">Description of premises:</span>${pick(i.premises,"Residential")} Residential ${pick(i.premises,"Commercial")} Commercial ${pick(i.premises,"Industrial")} Industrial ${pick(i.premises,"Other")} Other, please specify: <div class="f">${esc(i.premises_other)}</div></div>
+    <div class="row"><span class="lbl n">Estimated age of the wiring system</span><span class="box">${esc(i.wiring_age_years)}</span><b>Years</b>
+      <span style="margin-left:4mm">Evidence of additions or alterations</span>${pick(i.alterations,"Yes")} Yes ${pick(i.alterations,"No")} No ${pick(i.alterations,"Not apparent")} Not apparent</div>
+    <div class="row"><span class="lbl n">Installation records available? (Reg 651.1)</span> Yes ${pick(i.records_available,"Yes")} No ${pick(i.records_available,"No")}
+      <span style="margin-left:3mm">Date of last inspection</span><div class="f c" style="flex:0 0 22mm">${esc(i.last_inspection)}</div>
+      <span>If yes, estimated age</span><span class="box">${esc(i.alterations_age)}</span> years
+      <span style="font-size:6pt;margin-left:2mm">Alternative source of supply</span><span class="box">${esc(i.alt_supply)}</span></div>`)}
+  ${sec("D. EXTENT AND LIMITATIONS OF INSPECTION AND TESTING (see Regulation 651)",`
+    <div class="row"><span class="lbl n">Extent of the electrical installation covered by this report</span><div class="f">${esc(e.covered)}</div></div>
+    <div class="row"><span class="lbl n">Agreed limitations including the reasons, see Regulations 653.2</span></div>
+    <div class="row"><div class="f tall">${esc(e.agreed_limitations)}</div></div>
+    <div class="row"><span class="lbl" style="width:38mm">Limitations agreed with</span><div class="f">${esc(e.agreed_with)}</div><span class="lbl n">Position (if applicable)</span><div class="f" style="flex:0 0 45mm">${esc(e.position)}</div></div>
+    <div class="row"><span class="lbl n" style="width:38mm;white-space:normal">Operational limitations including the reasons</span><div class="f tall">${esc(e.operational_limitations)}</div></div>
+    <div class="note" style="margin-left:40mm">Unless specifically agreed between the client and inspector prior to the inspection: cables concealed within trunking and conduits, under floors, in roof spaces, and generally within the fabric of the building or underground, have not been inspected; no checks for safety alerts, corrective actions or product recalls for electrical equipment forming part of the installation have been made.</div>`,
+    "The inspection and testing detailed in this report and accompanying schedules have been carried out in accordance with BS 7671:2018 as amended")}
+  ${sec("E. SUMMARY OF THE CONDITION OF THE INSTALLATION",`
+    <div class="row"><span class="lbl" style="font-size:10pt">General condition of the installation</span> (in terms of electrical safety)</div>
+    <div class="row"><div class="f tall">${esc(D.summary.general_condition)}</div></div>
+    <div style="text-align:center;font-weight:bold;font-size:9pt">Overall assessment of the installation in terms of its suitability for continued use:</div>
+    <div class="verdict" style="color:${D.summary.overall==="UNSATISFACTORY"?"#b3141b":"#111"}">${esc(D.summary.overall)}</div>
+    <div style="text-align:center;font-weight:bold;font-size:9pt">An unsatisfactory assessment indicates that dangerous (code C1) and/or potentially dangerous (code C2) conditions have been identified</div>
+    <div class="note">Any observation classified as ‘Improvement recommended’ (code C3), or ‘Further investigation’ (code FI) is advisory and does not affect the overall assessment but should be given due consideration.</div>`)}
+  `);
+}
+
+function p2(){
+  const s=D.supply,p=D.particulars,m=p.main_switch,dec=D.declaration,c=D.contractor;
+  const earthOpts=["TN-S","TN-C-S (PME)","TT","IT","TN-C","TN-C-S (PNB)"];
+  const condOpts=["1 phase (2 wire)","2 phase (3 wire)","1 phase (3 wire)","3 phase (3 wire)","3 phase (4 wire)","2 wire","3 wire","Other"];
+  return page(`
+  ${sec("F. RECOMMENDATION FOR NEXT INSPECTION",`
+    <div class="note bold" style="font-size:7pt">Where the overall assessment is UNSATISFACTORY, observations coded C1 or C2 should be acted upon as a matter of urgency. Observations coded FI should be investigated without delay (an FI alone does not make the installation unsatisfactory). Observations coded C3 should be given due consideration.</div>
+    <div class="row" style="margin-top:2mm"><span class="lbl n">Subject to the necessary remedial action being taken, I/We recommend that this installation is further inspected and tested before:</span><div class="f c" style="flex:0 0 40mm">${esc(D.next_inspection.date)}</div></div>
+    <div class="row"><span class="lbl n">for the following reasons:</span><div class="f">${esc(D.next_inspection.reasons)}</div></div>`)}
+  ${sec("G. DECLARATION",`
+    <div class="note bold" style="font-size:7pt;margin-bottom:2mm">I/We, being the person(s) responsible for the inspection and testing of the electrical installation described above, having exercised reasonable skill and care, declare that the information in this report, including the observations and attached schedules, provides an accurate assessment of the condition of the installation, taking into account the extent and limitations in Section D.</div>
+    <div class="grid2">
+      <div><div class="bold" style="margin-bottom:1.5mm">INSPECTED AND TESTED BY:</div>
+        <div class="row"><span class="lbl n" style="width:20mm">Name (CAPITALS)</span><div class="f">${esc(dec.inspector_name)}</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">Signature</span><div class="f sig">signature</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">Position</span><div class="f">${esc(dec.inspector_position)}</div><span>Date</span><div class="f" style="flex:0 0 20mm">${esc(dec.inspector_date)}</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">Contact</span><div class="f" style="display:block;line-height:1.7">Tel ${esc(c.tel)}<br>Email ${esc(c.email)}<br>Web ${esc(c.web)}</div></div></div>
+      <div><div class="bold" style="margin-bottom:1.5mm">REPORT AUTHORISED FOR ISSUE BY:</div>
+        <div class="row"><span class="lbl n" style="width:20mm">Contractor</span><div class="f bold">${esc(c.name)}</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">Address</span><div class="f">${esc(c.address)}</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">Name</span><div class="f">${esc(dec.authoriser_name)}</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">Signature</span><div class="f sig">signature</div></div>
+        <div class="row"><span class="lbl n" style="width:20mm">ENROLMENT NO</span><div class="f">${esc(c.enrolment_no)}</div><span>Date</span><div class="f" style="flex:0 0 20mm">${esc(dec.authoriser_date)}</div></div></div>
+    </div>`)}
+  ${sec("H. SCHEDULES AND CONTINUATION SHEET(S) ATTACHED",`
+    <div class="row"><span class="lbl">Continuation sheet(s) for Section(s):</span> N/A</div>
+    <div class="row" style="gap:6mm"><span class="box">✓</span><b>Schedule(s) of Inspection</b><span class="box">✓</span><b>Schedule(s) of Circuit Details</b><span class="box">✓</span><b>Schedule(s) of Test Results</b></div>`,
+    "The schedule(s) and continuation sheet(s) listed are part of this document and this report is valid only when they are attached to it.")}
+  ${sec("I. SUPPLY CHARACTERISTICS AND EARTHING ARRANGEMENTS",`
+    <div style="display:grid;grid-template-columns:28mm 1fr 42mm 58mm;gap:3mm">
+      <div><div class="bold">Earthing Arrangements</div>${earthOpts.map(o=>`<div class="row">${pick(s.earthing,o)} ${o}</div>`).join("")}</div>
+      <div><div class="bold">Number and Type of Live Conductors</div>
+        <div class="row">${pick(s.current,"AC")} AC &nbsp; ${pick(s.current,"DC")} DC</div>
+        ${condOpts.map(o=>`<div class="row">${pick(s.conductors,o)} ${o}</div>`).join("")}</div>
+      <div><div class="bold">Nature of Supply Parameters</div>
+        <div class="row"><span style="flex:1">Nominal voltage U(o)</span><span class="box">${esc(s.voltage)}</span> V</div>
+        <div class="row"><span style="flex:1">Nominal frequency f(1)</span><span class="box">${esc(s.frequency)}</span> Hz</div>
+        <div class="row"><span style="flex:1">Prospective fault current Ipf(2)</span><span class="box">${esc(s.pfc_ka)}</span> kA</div>
+        <div class="row"><span style="flex:1">External earth fault loop impedance Ze(2)</span><span class="box">${esc(s.ze_ohm)}</span> Ω</div>
+        <div class="note">(1) by enquiry (2) by enquiry or by measurement</div></div>
+      <div><div class="bold">Characteristics of Primary Overcurrent Protective Device(s)</div>
+        <div class="row"><span style="width:17mm">BS (EN)</span><div class="f">${esc(s.ocpd_bs)}</div></div>
+        <div class="row"><span style="width:17mm">Type</span><div class="f">${esc(s.ocpd_type)}</div></div>
+        <div class="row"><span style="width:17mm">Rated current</span><div class="f">${esc(s.ocpd_rating)}</div></div>
+        <div class="row"><span style="width:17mm">Breaking capacity</span><div class="f">${esc(s.ocpd_breaking)}</div></div>
+        <div class="row"><span style="flex:1">Confirmation of Supply Polarity</span><span class="box">${esc(s.polarity_confirmed)}</span></div></div>
+    </div>`)}
+  ${sec("J. PARTICULARS OF INSTALLATION REFERRED TO IN THIS REPORT",`
+    <div class="row"><span class="lbl">Means of earthing</span>${pick(p.means_of_earthing,"Distributor's facility")} Distributor's facility ${pick(p.means_of_earthing,"Installation earth electrode")} Installation earth electrode
+      <span style="margin-left:3mm">Electrode type</span><div class="f">${esc(p.electrode_type)}</div><span>Resistance</span><span class="box">${esc(p.electrode_resistance)}</span>Ω
+      <span>Max demand</span><span class="box">${esc(p.max_demand_a)}</span>A</div>
+    <div class="row"><span>Location of the earth electrode</span><div class="f">${esc(p.electrode_location)}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm;margin-top:2mm">
+      <div><div class="bold">Main protective conductors</div>
+        <div class="row"><span style="flex:1">Earthing conductor</span>${esc(p.earthing_conductor.material)}, <span class="box">${esc(p.earthing_conductor.csa)}</span>mm² ${box(p.earthing_conductor.verified)}</div>
+        <div class="row"><span style="flex:1">Main bonding conductor</span>${esc(p.bonding_conductor.material)}, <span class="box">${esc(p.bonding_conductor.csa)}</span>mm² ${box(p.bonding_conductor.verified)}</div>
+        <div class="note">Boxes: connection/continuity verified</div></div>
+      <div><div class="bold">Main Bonding</div>
+        <div class="row">${box(p.bonding.water)} Water ${box(p.bonding.gas)} Gas ${box(p.bonding.oil)} Oil</div>
+        <div class="row">${box(p.bonding.steel)} Steel ${box(p.bonding.other)} Other ${box(p.bonding.lightning)} Lightning</div></div>
+      <div><div class="bold">Main switch / switch-fuse / CB / RCD</div>
+        <div class="row">BS(EN) <span class="box">${esc(m.bs)}</span> Poles <span class="box">${esc(m.poles)}</span></div>
+        <div class="row">Supply ${esc(m.supply_material)} <span class="box">${esc(m.supply_csa)}</span>mm²</div>
+        <div class="row"><span class="box">${esc(m.voltage)}</span>V <span class="box">${esc(m.current)}</span>A Delay <span class="box">${esc(m.rated_time_delay)}</span></div>
+        <div class="row">RCD <span class="box">${esc(m.rcd_current)}</span>mA <span class="box">${esc(m.rcd_time)}</span>ms Type <span class="box">${esc(m.rcd_type)}</span></div></div>
+    </div>`)}
+  `);
+}
+
+function p3(){
+  const hi=D.observations.map((o,i)=>({...o,n:i+1})).filter(o=>o.code==="C1"||o.code==="C2");
+  const lo=D.observations.map((o,i)=>({...o,n:i+1})).filter(o=>o.code==="C3"||o.code==="FI");
+  const rows=(arr,empty)=>arr.length?arr.map(o=>`<tr><td style="width:18mm;text-align:center">${o.n}</td><td>${esc(o.text)}</td><td class="code">${o.code}</td></tr>`).join(""):`<tr><td></td><td style="color:#777;font-style:italic">${empty}</td><td></td></tr>`;
+  return page(`${bar("K. OBSERVATIONS")}
+    <p>Referring to the attached Schedule(s) of Inspection, Circuit Details and Test Results, and subject to the limitations specified at the Extent and limitations of inspection and testing section:</p>
+    <div class="row" style="gap:6mm;margin:3mm 0">No remedial action is required ${box(!D.observations.length)} &nbsp;&nbsp;&nbsp; The following observations are made ${box(D.observations.length>0)} (see below)</div>
+    <p style="color:#666;font-style:italic">NOTE: Photographic and/or thermographic images can be attached to the report to support observations made in this Section.</p>
+    <table class="obs"><tr><th>Item No.</th><th>C1 and C2 OBSERVATION(S)</th><th class="code">Classification code</th></tr>${rows(hi,"No C1 or C2 observations recorded.")}</table>
+    <p class="note">C1 – Danger present. Risk of injury. Immediate remedial action is necessary.<br>C2 – Potentially dangerous – urgent remedial action is necessary.</p>
+    <table class="obs"><tr><th>Item No.</th><th>C3 and FI OBSERVATION(S)</th><th class="code">Classification code</th></tr>${rows(lo,"No C3 or FI observations recorded.")}</table>
+    <p class="note">C3 – Improvement recommended.<br>FI – Further investigation is advised.</p>`);
+}
+
+function p4(){
+  const withPh=D.observations.map((o,i)=>({...o,n:i+1})).filter(o=>o.photos&&o.photos.length);
+  if(!withPh.length) return "";
+  const col={C1:"var(--c1)",C2:"var(--c2)",C3:"var(--c3)",FI:"var(--fi)"};
+  const label={C1:"Danger present",C2:"Potentially dangerous",C3:"Improvement recommended",FI:"Further investigation"};
+  return page(`${bar("PHOTOGRAPHIC EVIDENCE")}
+    ${withPh.map(o=>`<div class="obsitem" style="border-color:${col[o.code]}">
+      <div style="flex:1"><span class="chip" style="background:${col[o.code]}">${o.code}</span><span style="color:#666">Item ${o.n} · ${label[o.code]}</span><p>${esc(o.text)}</p></div>
+      <div class="ph">${o.photos.map(src=>src?`<img src="${raw(src)}" alt="Observation photo">`:`<div>photo</div>`).join("")}</div></div>`).join("")}`);
+}
+
+function dbPage(b){
+  const groups=[["",2],["",3],["Circuit conductors",2],["",1],["Overcurrent protective device",5],["RCD",4],["Continuity Ω",5],["Insulation resistance",5],["",2],["RCD",2],["AFDD",1]];
+  const widths=[5,22,4,4,4,4,4,5,7,4,4,5,6,7,4,4,4,4,4,4,5,4,5,5,5,5,5,5,6,6,6,6];
+  return page(`
+    <div class="purple">DISTRIBUTION BOARD DETAILS FOR &nbsp;&nbsp; ${esc(D.installation.address)}</div>
+    <div class="dbh">
+      <div class="k">DB ref:</div><div>${esc(b.ref)}</div><div class="k">Zs at this board (Ω):</div><div>${esc(b.zs)}</div>
+      <div class="k">Ipf at this board (kA):</div><div>${esc(b.ipf)}</div><div class="k">Main switch type BSEN</div><div>${esc(b.main_switch_bs)}</div>
+      <div class="k">Rating:</div><div>${esc(b.rating)} A</div><div class="k">SPD:</div><div>${esc(b.spd)}</div>
+      <div class="k">Location:</div><div>${esc(b.location)}</div><div class="k">Phase sequence confirmed</div><div>${esc(b.phase_seq)}</div>
+      <div class="k">Supplied from:</div><div>${esc(b.supplied_from)}</div><div class="k">No. of phases:</div><div>${esc(b.phases)}</div>
+      <div class="k">Supply PD BSEN:</div><div>${esc(b.ocpd_bs)} / ${esc(b.ocpd_rating)} A</div><div class="k">Supply / Earth:</div><div>${esc(b.supply_csa)} / ${esc(b.earth_csa)} mm²</div>
+    </div>
+    <div class="purple" style="display:flex"><span style="flex:1">CIRCUIT DETAILS</span><span style="width:48%">TEST RESULTS</span></div>
+    <table class="ct">
+      <colgroup>${widths.map(w=>`<col style="width:${w}%">`).join("")}</colgroup>
+      <tr>${groups.map(([t,n])=>`<th colspan="${n}" style="${t?"":"border-bottom:0"}">${t}</th>`).join("")}</tr>
+      <tr>${CIRCUIT_COLS.map((c,i)=>i===1?`<th style="border-top:0">${c}</th>`:`<th class="v"><span>${c}</span></th>`).join("")}</tr>
+      ${b.circuits.map(r=>`<tr>${r.map((v,i)=>`<td${i===1?' class="d"':''}>${esc(v)}</td>`).join("")}</tr>`).join("")}
+      ${Array(Math.max(0,14-b.circuits.length)).fill(`<tr>${"<td>&nbsp;</td>".repeat(32)}</tr>`).join("")}
+    </table>
+    <div class="note" style="margin-top:2mm">Not all SPDs have visible functionality indication. RCD effectiveness is verified using an alternating current test at rated residual operating current (IΔn). Not all AFDDs have a test button.</div>`, true);
+}
+
+function p7(){
+  const t=D.instruments,dec=D.declaration;
+  const f=(l,v)=>`<div class="row"><span class="lbl" style="width:42mm;text-align:right">${l}</span><div class="f">${esc(v)}</div></div>`;
+  return page(`
+    ${sec('<span style="flex:1;text-align:center">TEST INSTRUMENTS USED</span>',`<div class="grid2"><div>${f("Earth fault loop impedance",t.efli)}${f("Insulation resistance",t.insulation)}${f("Continuity",t.continuity)}</div><div>${f("RCD",t.rcd)}${f("MFT",t.mft)}${f("Other",t.other)}</div></div>
+      <div class="grid2" style="margin-top:3mm;border-top:1px solid #999;padding-top:3mm"><div class="row"><span class="lbl">Inspected by: Signature</span><div class="f sig" style="height:22mm">signature</div></div>
+      <div>${f("Name (CAPITALS)",dec.inspector_name)}${f("Date of inspection",dec.inspector_date)}</div></div>`)}
+    ${sec('<span style="flex:1;text-align:center">REMARKS</span>',`<div class="bold" style="margin:2mm 0 3mm">Special installations or locations present, if any. Details of circuits and/or installed equipment vulnerable to damage when testing and/or remarks:</div>
+      <div class="f tall" style="min-height:150mm;white-space:pre-wrap">${raw(D.remarks)}</div>`)}
+  `);
+}
+
+function inspectionPages(){
+  const rows=[];
+  SCHEDULE.forEach(g=>{rows.push({h:g.s});if(g.note)rows.push({note:g.note});g.items.forEach(it=>rows.push({it}));});
+  const cell=(id,isHead)=>{ if(isHead) return ""; const v=D.inspection[id]||"N/A";
+    const cls=v==="✓"?"ok":(["C1","C2","C3","FI"].includes(v)?v:""); return `<span class="out ${cls}">${v}</span>`; };
+  const pages=[];let cur=[],weight=0;const MAX=19;
+  rows.forEach(r=>{const w=r.it?(r.it[1].length>110?1.6:1):(r.h?1.3:.7); if(weight+w>MAX){pages.push(cur);cur=[];weight=0;} cur.push(r);weight+=w;});
+  if(cur.length)pages.push(cur);
+  return pages.map((pr,pi)=>page(`${bar("N. INSPECTION SCHEDULE FOR A DISTRIBUTION BOARD INSTALLATION"+(pi?" (CONTINUED)":""))}
+    <div class="legend"><span>✓ Acceptable</span><span>C1 / C2 Unacceptable</span><span>C3 Improvement</span><span>FI Further investigation</span><span>N/A Not applicable</span><span>LIM Limitation</span><span>NV Not verified</span></div>
+    <table class="is"><tr><th style="width:14mm">ITEM</th><th>DESCRIPTION</th><th class="o" style="text-align:right">OUTCOME</th></tr>
+    ${pr.map(r=>r.h?`<tr class="sh"><td colspan="3">${r.h}</td></tr>`:r.note?`<tr class="sn"><td colspan="3">${r.note}</td></tr>`:
+      `<tr><td>${r.it[3]?"":r.it[0]}</td><td style="${r.it[2]?"font-weight:bold":""}${r.it[3]?"padding-left:6mm":""}">${r.it[3]?"* ":""}${r.it[1]}</td><td class="o">${cell(r.it[0],r.it[2])}</td></tr>`).join("")}
+    </table>`)).join("");
+}
+
+function guidance(){
+  const pts=[
+    "This report confirms, so far as reasonably practicable, whether the electrical installation is in a satisfactory condition for continued use (Section E), and identifies any damage, deterioration, defects or dangerous conditions (Section K).",
+    "The report is only valid when accompanied by the Inspection Schedule(s) and the Schedule(s) of Circuit Details and Test Results.",
+    "The person ordering the report should receive the original; the inspector retains a duplicate.",
+    "Keep the original safe and make it available to anyone inspecting or working on the installation in future, including new owners or occupiers.",
+    "Section D sets out the extent and limitations agreed before the inspection with the person ordering it and any other interested parties.",
+    "Any operational limitations met during the inspection (e.g. no access to part of the installation) are recorded in Section D.",
+    "C1 (Danger present): remedial work by a competent person is needed immediately.",
+    "C2 (Potentially dangerous): remedial work by a competent person is needed as a matter of urgency.",
+    "C3 (Improvement recommended): advisory only; does not affect the overall assessment.",
+    "FI (Further investigation): an apparent deficiency that could not be fully identified; investigate without delay. An FI alone does not make the installation unsatisfactory.",
+    "The installation should be re-inspected by the date given in Section F.",
+    "Test any RCD six-monthly using its ‘T’/‘Test’ button; if it does not switch off, seek expert advice.",
+    "Test any AFDD with a manual test facility six-monthly, following manufacturer’s instructions.",
+    "Check any SPD status indicator; if it shows not operational, seek expert advice.",
+    "Where alternative or additional sources of supply exist, warning notices should be present at the origin/meter, consumer unit and all points of isolation."
+  ];
+  const codes=[["A","Thermoplastic insulated/ sheathed cables"],["B","Thermoplastic cables in metallic conduit"],["C","Thermoplastic cables in non-metallic conduit"],["D","Thermoplastic cables in metallic trunking"],["E","Thermoplastic cables in non-metallic trunking"],["F","Thermoplastic SWA cables"],["G","Thermosetting SWA cables"],["H","Mineral insulated cables"],["O","Other"]];
+  return page(`<div class="gtitle"><h2>CONDITION REPORT — GUIDANCE FOR RECIPIENTS</h2><b>This report is an important document which should be retained for future reference</b></div>
+    <div class="note" style="text-align:center;margin-bottom:4mm;color:#a00">POC note: replace with the official recipient guidance wording from your certification scheme.</div>
+    <ol class="gl">${pts.map(p=>`<li style="margin-bottom:2mm">${p}</li>`).join("")}</ol>
+    <table class="codes"><caption>CODES FOR TYPES OF WIRING</caption><tr>${codes.map(c=>`<th>${c[0]}</th>`).join("")}</tr><tr>${codes.map(c=>`<td><b>${c[1]}</b></td>`).join("")}</tr></table>`);
+}
+
+document.getElementById('pages').innerHTML =
+  p1()+p2()+p3()+p4()+D.boards.map(dbPage).join("")+p7()+inspectionPages()+guidance();
+const all=document.querySelectorAll('.page .pn');
+all.forEach((el,i)=>el.textContent=`Page ${i+1} of ${all.length}`);
+</script>
+</body>
+</html>

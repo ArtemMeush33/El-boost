@@ -1,30 +1,696 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1720">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="El-boost">
-<title>El-boost</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="EICR Voice"><meta name="theme-color" content="#09090b"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>EICR Voice</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap">
 <style>
-  :root { --bg:#0f1720; --card:#17212c; --text:#eef2f6; --muted:#8a99a8; --accent:#f5c518; }
-  * { box-sizing:border-box; margin:0; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text);
-         min-height:100dvh; padding: max(24px, env(safe-area-inset-top)) 16px 24px; display:flex; flex-direction:column; gap:20px; }
-  header { display:flex; align-items:center; gap:10px; }
-  .bolt { width:36px; height:36px; border-radius:10px; background:var(--accent); display:grid; place-items:center; color:#111; font-weight:800; }
-  h1 { font-size:1.4rem; }
-  .card { background:var(--card); border-radius:16px; padding:18px; }
-  .card h2 { font-size:1rem; margin-bottom:6px; }
-  .card p { color:var(--muted); font-size:.95rem; line-height:1.45; }
-  footer { margin-top:auto; color:var(--muted); font-size:.8rem; text-align:center; }
+/* layout: shadcn/ui dark (zinc). one screen: header, heat-map card filling the rest, talk button pinned at the bottom */
+:root{
+  --background:#09090b; --foreground:#fafafa; --card:#09090b; --muted:#27272a; --muted-foreground:#a1a1aa;
+  --border:#27272a; --input:#27272a; --primary:#fafafa; --primary-foreground:#18181b; --secondary:#27272a;
+  --destructive:#dc2626; --ring:#d4d4d8; --radius:.5rem;
+  /* heat map (data viz) */
+  --cell:#18181b; --g1:#14532d; --g2:#16a34a; --hot:#86efac; --amber:#f59e0b; --red:#ef4444;
+  --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--background);color:var(--foreground);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--background)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.screen{max-width:640px;margin:0 auto;min-height:100%;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 104px}
+
+/* shadcn primitives */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 16px;border-radius:calc(var(--radius) - 2px);border:1px solid transparent;font-size:14px;font-weight:500;white-space:nowrap;transition:background .15s,opacity .15s}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn-primary{background:var(--primary);color:var(--primary-foreground)}
+.btn-primary:hover{background:#e4e4e7}
+.btn-outline{background:transparent;border-color:var(--input)}
+.btn-outline:hover,.btn-ghost:hover{background:var(--muted)}
+.btn-ghost{background:transparent}
+.btn-destructive{background:var(--destructive);color:#fff}
+.btn-icon{width:36px;padding:0}
+.btn-lg{height:48px;font-size:15px;border-radius:var(--radius)}
+.btn svg{width:18px;height:18px}
+.input{height:36px;width:100%;min-width:0;background:transparent;border:1px solid var(--input);border-radius:calc(var(--radius) - 2px);padding:0 12px;font-size:14px;outline:none}
+.input:focus{border-color:var(--ring);box-shadow:0 0 0 1px var(--ring)}
+textarea.input{height:auto;min-height:88px;padding:8px 12px;resize:none}
+select.input{appearance:none}
+.label{font-size:14px;font-weight:500}
+.desc{font-size:13px;color:var(--muted-foreground)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-weight:500;color:var(--muted-foreground)}
+.progress{height:6px;width:64px;background:var(--secondary);border-radius:999px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--primary)}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--background);display:flex;align-items:center;gap:12px;padding-block:16px 12px}
+.h1{font-size:20px;font-weight:600;letter-spacing:-.01em;margin:0}
+.title{min-width:0;display:flex;flex-direction:column}
+.title b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title span{font-size:12px;color:var(--muted-foreground)}
+
+/* home */
+.stack{display:flex;flex-direction:column;gap:12px}
+#list{list-style:none;margin:0;padding:0}
+#list li+li{border-top:1px solid var(--border)}
+#list li button{width:100%;background:none;border:0;display:grid;grid-template-columns:1fr auto;gap:2px 12px;text-align:left;padding:12px 16px}
+#list li button:hover{background:#18181b}
+#list .a{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#list .s{color:var(--muted-foreground);font-size:12px}
+#list .p{grid-row:span 2;align-self:center;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.empty-list{color:var(--muted-foreground);padding:24px 16px;font-size:13px}
+
+/* heat map */
+.grid{display:grid;justify-content:center;align-content:center;padding:8px;overflow:hidden}
+.cell{width:100%;height:100%;min-width:0;border:0;padding:0;border-radius:2px;background:var(--cell);transition:background .5s,box-shadow .5s}
+.cell.ok{background:var(--g2)}
+.cell.ok.na{background:var(--g1)}
+.cell.check{background:var(--amber)}
+.cell.issue{background:var(--red)}
+.cell.hot{background:var(--hot);box-shadow:0 0 8px rgba(134,239,172,.6)}
+.cell.picked{outline:2px solid var(--foreground);outline-offset:1px}
+@media (prefers-reduced-motion:reduce){.cell{transition:none}.btn-destructive.live{animation:none}}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--background);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:12px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.bar>div{max-width:608px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.bar .btn{width:100%}
+.btn-destructive.live{animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.8}}
+.caption{font-size:13px;color:var(--muted-foreground);text-align:center;min-height:0}
+
+/* dialogs / drawers */
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;justify-content:center}
+.drawer{width:100%;max-width:640px;max-height:92%;overflow:auto;background:var(--background);border:1px solid var(--border);border-bottom:0;border-radius:12px 12px 0 0;padding:20px max(16px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.drawer::before{content:"";align-self:center;width:48px;height:4px;border-radius:999px;background:var(--muted);margin:-8px 0 0}
+.drawer h2{margin:0;font-size:17px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:8px}
+.acts{display:flex;gap:8px}
+.acts .btn{flex:1}
+.msg{font-size:13px}
+.msg.issue{color:var(--red)}.msg.check{color:var(--amber)}
+
+/* toast (sonner-style) */
+.toast{position:fixed;z-index:25;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));width:min(calc(100% - 32px),420px);background:var(--background);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.e{border-color:#7f1d1d;color:#fca5a5}.toast.w{color:#fcd34d}
+
+.preview{position:fixed;inset:0;z-index:30;background:var(--background);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.preview .pbar{display:flex;gap:8px;align-items:center;padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--border)}
+.preview .pbar span{flex:1;color:var(--muted-foreground);font-size:12px}
+.preview iframe{flex:1;border:0;background:#71717a;width:100%}
 </style>
-</head>
-<body>
-  <header><div class="bolt">⚡</div><h1>El-boost</h1></header>
-  <div class="card"><h2>It works 🎉</h2><p>This is the starter page. Add it to your home screen and it will update every time new changes are pushed.</p></div>
-  <div class="card"><h2>Coming next</h2><p>The app screens will go here.</p></div>
-  <footer>v0.1 · starter</footer>
-</body>
-</html>
+
+<!-- HOME -->
+<section id="home" class="screen">
+  <header class="top">
+    <h1 class="h1">EICR Voice</h1>
+    <span class="badge" id="hmeta" style="margin-left:auto">on device</span>
+  </header>
+  <div class="stack">
+    <input class="input" id="q" placeholder="Search address or ref…" autocomplete="off" aria-label="Search reports">
+    <div class="card"><ul id="list"></ul></div>
+    <p class="desc">Reports are stored on this device only.</p>
+  </div>
+</section>
+
+<!-- REPORT -->
+<section id="report" class="screen" hidden>
+  <header class="top">
+    <button class="btn btn-ghost btn-icon" id="back" aria-label="Back to reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+    <div class="title"><b id="rAddr"></b><span id="rTpl"></span></div>
+  </header>
+  <div class="card grid" id="grid"></div>
+  <!-- kept for later; not shown in this simplified view -->
+  <div hidden><span id="pct"></span><i id="meter"></i><span id="counts"></span><div id="legend"></div><div id="log"></div>
+    <button id="exp"></button><button id="del"></button><span id="delConfirm"><button id="delYes"></button></span></div>
+</section>
+
+<div class="bar" id="homeBar"><div><button class="btn btn-primary btn-lg" id="newBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create new</button></div></div>
+<div class="bar" id="talkBar" hidden><div>
+  <div class="caption" id="caption" hidden></div>
+  <button class="btn btn-primary btn-lg" id="talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></svg><span id="talkLbl">Talk</span></button>
+</div></div>
+
+<!-- TYPE / KEYBOARD DICTATION DRAWER -->
+<div class="overlay" id="sayDrawer" hidden>
+  <div class="drawer">
+    <h2>Add reading</h2>
+    <div class="field"><textarea class="input" id="say" placeholder="Ze 0.21, PFC 0.61, TN-C-S" aria-label="Reading"></textarea>
+      <p class="desc">Tap the mic on your keyboard to dictate.</p></div>
+    <div class="acts"><button class="btn btn-outline" id="sayCancel">Cancel</button><button class="btn btn-primary" id="saySend">Send</button></div>
+  </div>
+</div>
+
+<!-- FIELD DRAWER -->
+<div class="overlay" id="detailWrap" hidden>
+  <div class="drawer" id="detail">
+    <div><h2 id="dLabel"></h2><p class="desc" id="dKey" style="word-break:break-all;margin:4px 0 0"></p></div>
+    <input class="input" id="dVal" autocomplete="off" aria-label="Value">
+    <p class="msg" id="dMsg"></p>
+    <div class="acts"><button class="btn btn-outline" id="dClose">Close</button><button class="btn btn-primary" id="dSave">Save</button></div>
+  </div>
+</div>
+
+<!-- NEW REPORT DRAWER -->
+<div class="overlay" id="newSheet" hidden>
+  <form class="drawer" id="newForm">
+    <div><h2>New report</h2><p class="desc" style="margin:4px 0 0">Electrical Installation Condition Report</p></div>
+    <div class="field"><label class="label" for="nAddr">Installation address</label><input class="input" id="nAddr" required placeholder="12 Example Road, Testtown AB1 2CD"></div>
+    <div class="field"><label class="label" for="nOcc">Occupier</label><input class="input" id="nOcc" placeholder="Tenant"></div>
+    <div class="field"><label class="label" for="nClient">Person ordering the report</label><input class="input" id="nClient" placeholder="Name or agency"></div>
+    <div class="field"><label class="label" for="nClientAddr">Their address</label><input class="input" id="nClientAddr"></div>
+    <div class="field"><label class="label" for="nReason">Reason</label>
+      <select class="input" id="nReason">
+        <option>Electrical installation condition check prior to tenancy agreement</option>
+        <option>Periodic inspection</option>
+        <option>Sale of property</option>
+        <option>Insurance requirement</option>
+      </select></div>
+    <div class="acts"><button type="button" class="btn btn-outline" id="newCancel">Cancel</button><button class="btn btn-primary" type="submit">Create</button></div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- EXPORT PREVIEW (kept for later) -->
+<div class="preview" id="preview" hidden>
+  <div class="pbar"><button class="btn btn-outline" id="pClose">Close</button><span id="pInfo"></span><button class="btn btn-primary" id="pSave">Save file</button></div>
+  <iframe id="pFrame" title="Report preview"></iframe>
+</div>
+
+<script>
+const SCHEDULE = [
+  {s:"1.0 INTAKE EQUIPMENT (VISUAL INSPECTION ONLY)", note:"An outcome against an item in this section, other than access to live parts, should not be used to determine the overall outcome", items:[
+    ["1.1","Condition of service cable"],["1.2","Condition of service head"],["1.3","Condition of distributor’s earthing arrangement"],
+    ["1.4","Condition of meter tails - Distributor/Consumer"],["1.5","Condition of metering equipment"],["1.6","Condition of isolator (where present)"]]},
+  {s:"2.0 PARALLEL OR SWITCHED ALTERNATIVE SOURCES OF SUPPLY", items:[
+    ["2.1","Presence of adequate arrangements where generator to operate as a switched alternative (551.6)"],
+    ["2.2","Dedicated earthing arrangement independent of that of the public supply (551.4.3.2.1)"],
+    ["2.3","Presence of adequate arrangements where generator to operate in parallel with the public supply system (551.7)"],
+    ["2.4","Correct connection of generator in parallel (551.7.2)"],["2.5","Compatibility of characteristics of means of generation (551.7.3)"],
+    ["2.6","Means to provide automatic disconnection of generator in the event of loss of public supply system or voltage or frequency deviation beyond declared values (551.7.4)"],
+    ["2.7","Means to prevent connection of generator in the event of loss of public supply system or voltage or frequency deviation beyond declared values (551.7.5)"],
+    ["2.8","Means to isolate generator from the public supply system (551.7.6)"]]},
+  {s:"3.0 EARTHING AND BONDING ARRANGEMENTS (411.3, Chapter 54)", items:[
+    ["3.1","Presence and condition of distributor’s earthing arrangement (542.1.2.1; 542.1.2.2)"],
+    ["3.2","Presence and condition of earth electrode connection where applicable (542.1.2.3)"],
+    ["3.3","Provision of earthing/bonding labels at all appropriate locations (514.13)"],
+    ["3.4","Adequacy of earthing conductor size (542.3, 543.1.1)"],["3.5","Accessibility and condition of earthing conductor at MET (543.3.2)"],
+    ["3.6","Adequacy of main protective bonding conductor sizes (544.1)"],
+    ["3.7","Condition and accessibility of main protective bonding conductor connections (411.3.1.2; 543.3.2; 544.1.2)"],
+    ["3.8","Accessibility and condition of other protective bonding connections (543.3.1; 543.3.2)"],
+    ["3.9","Adequacy of earthing conductor connections (542.3.2)"],["3.10","FELV - requirements satisfied (411.7; 411.7.1)"]]},
+  {s:"4.0 CONSUMER UNIT OR DISTRIBUTION BOARD", items:[
+    ["4.1","Adequacy of working space / accessibility to consumer unit / distribution board (132.12; 513.1)"],["4.2","Security of fixing (134.1.1)"],
+    ["4.3","Condition of enclosure(s) in terms of IP rating etc (416.2)"],["4.4","Condition of enclosure(s) in terms of fire rating etc (421.1.6; 421.1.201; 526.5)"],
+    ["4.5","Enclosure not damaged or deteriorated so as to impair safety (651.2)"],["4.6","Presence of main linked switch (as required by 462.1.201)"],
+    ["4.7","Operation of main switch - (functional check) (643.10)"],["4.8","Manual operation of circuit-breakers, RCDs and AFDDs to prove disconnection (643.10)"],
+    ["4.9","Correct identification of circuit details and protective devices, where required (514.8.1; 514.9.1)"],
+    ["4.10","Presence of RCD six-monthly test notice, where required (514.12.2)"],
+    ["4.11","Presence of alternative supply warning notice at or near consumer unit/distribution board (514.15)"],
+    ["4.12","Presence of other required labelling (please specify) (Section 514)"],
+    ["4.13","Compatibility of protective devices, bases and other components; correct type and rating (No signs of unacceptable thermal damage, arcing or overheating) (411.3.2; 411.4; 411.5; 411.6; Sections 432, 433, 434; 530.3.201; 537.1.1)"],
+    ["4.14","Single-pole switching or protective devices in line conductor only (132.14.1; 530.3.3; 643.6)"],
+    ["4.15","Protection against mechanical damage where cables enter consumer unit/distribution board (522.8.1; 522.8.5; 522.8.11)"],
+    ["4.16","Protection against electromagnetic effects where cables enter consumer unit/distribution board/enclosures (521.5.1)"],
+    ["4.17","RCD(s) provided for fault protection - includes RCBOs (411.4.204; 411.5.3; 531.3.3)"],
+    ["4.18","RCD(s) provided for additional protection/requirements - includes RCBOs (411.3.3; 415.1)"],
+    ["4.19","Confirmation of indication that SPD is functional (651.4)"],
+    ["4.20","Confirmation that ALL conductor connections, including connections to busbars, are correctly located in terminals and are tight and secure (526.1)"],
+    ["4.21","Adequacy/security of barriers (416.2)"],["4.22","Presence and effectiveness of obstacles (417.2)"],
+    ["4.23","Confirmation that integral test button/switch causes RCD(s) to trip when operated (functional check) (643.10)"],
+    ["4.24","Presence of next inspection recommendation label (514.12.1)"],
+    ["4.25","Confirmation of indication that AFDD(s) are operational (421.1.7; 532.6; 651.2(e))"]]},
+  {s:"5.0 FINAL CIRCUITS", items:[
+    ["5.1","Identification of conductors (514.3.1)"],["5.2","Cables correctly supported throughout their run (521.10.202; 522.8.5)"],
+    ["5.3","Condition of the insulation of live parts (416.1)"],
+    ["5.4","Non-sheathed cables protected by enclosure in conduit, ducting or trunking (521.10.1) To include the integrity of conduit and trunking systems (metallic and plastic)"],
+    ["5.5","Adequacy of cables for current-carrying capacity with regard for the type and nature of installation (Section 523)"],
+    ["5.6","Coordination between conductors and overload protective devices (433.1; 533.2.1)"],
+    ["5.7","Adequacy of protective devices: type and rated current for fault protection (411.3)"],
+    ["5.8","Presence and adequacy of circuit protective conductors (411.3.1.1; 543.1)"],
+    ["5.9","Wiring system(s) appropriate for the type and nature of the installation and external influences (Section 522)"],
+    ["5.10","Concealed cables installed in prescribed zones (see Section D. Extent and limitations) (522.6.202)"],
+    ["5.11","Concealed cables incorporating earthed armour or sheath, or run within earthed wiring system, or otherwise protected against mechanical damage from nails, screws and the like (see Section D. Extent and limitations) (522.6.204)"],
+    ["5.12","Provision of additional requirements for protection by RCD not exceeding 30 mA",true],
+    ["5.12a","For all socket-outlets of rating 32 A or less, unless an exception is permitted (411.3.3)",false,true],
+    ["5.12b","For the supply of mobile equipment not exceeding 32 A rating for use outdoors (411.3.3)",false,true],
+    ["5.12c","For cables concealed in walls at a depth of less than 50 mm (522.6.202; Table 52.1)",false,true],
+    ["5.12d","For cables concealed in walls/partitions containing metal parts regardless of depth (522.6.202; Table 52.1)",false,true],
+    ["5.12e","Final circuits supplying luminaires within domestic (household) premises (411.3.4)",false,true],
+    ["5.13","Provision of fire barriers, sealing arrangements and protection against thermal effects (Section 527)"],
+    ["5.14","Band II cables segregated or separated from Band I cables (528.1)"],["5.15","Cables segregated or separated from communication cabling (528.2)"],
+    ["5.16","Cables segregated or separated from non-electrical services (528.3)"],
+    ["5.17","Termination of cables at enclosures – indicate extent and location of sampling in Section D of the report (Section 526)",true],
+    ["5.17a","Connections soundly made and under no undue strain (526.6)",false,true],
+    ["5.17b","No basic insulation of a conductor visible outside enclosure (526.8)",false,true],
+    ["5.17c","Connections of live conductors adequately enclosed (526.5)",false,true],
+    ["5.17d","Adequately connected at the point of entry to enclosure (glands, bushes etc) (522.8.5)",false,true],
+    ["5.18","Condition of accessories including socket-outlets, switches and joint boxes (651.2(e))"],
+    ["5.19","Suitability of accessories for external influences (512.2)"],["5.20","Adequacy of working space/accessibility to equipment (132.12; 513.1)"],
+    ["5.21","Single-pole switching or protective devices in line conductors only (132.14.1; 530.3.3; 643.6)"],
+    ["5.22","Examination of cables for signs of unacceptable thermal or mechanical damage/deterioration (421.1; 522.6)"],
+    ["5.23","Where exposed to direct sunlight, cable of a suitable type (522.11.1)"],["5.24","Temperature rating of cable insulation (522.1.1; Table 52.2)"],
+    ["5.25","Adequacy of connections, including CPCs, within accessories and to fixed and stationary equipment (Section 526)"],
+    ["5.26","Presence, operation and correct location of appropriate devices for isolation and switching (Chapter 46; Section 537)"],
+    ["5.27","General condition of wiring systems (651.2)"],["5.28","Suitability of containment systems for continued use (including flexible conduit) (Section 522)"]]},
+  {s:"6.0 LOCATION(S) CONTAINING A BATH OR SHOWER", items:[
+    ["6.1","Additional protection for all low voltage (LV) circuits by RCD not exceeding 30 mA (701.411.3.3)"],
+    ["6.2","Where used as a protective measure, requirements for SELV or PELV met (701.414.4.5)"],
+    ["6.3","Shaver supply units comply with BS EN 61558-2-5 formerly BS 3535 (701.512.3)"],
+    ["6.4","Presence of supplementary bonding conductors, unless not required by BS 7671:2018 (701.415.2)"],
+    ["6.5","Low voltage (e.g. 230 V) socket-outlets sited at least 2.5 m from zone 1 (701.512.3)"],
+    ["6.6","Suitability of equipment for external influences for installed location in terms of IP rating (701.512.2)"],
+    ["6.7","Suitability of equipment for installation in a particular zone (701.512.3)"],
+    ["6.8","Suitability of current-using equipment for particular position within the location (701.55)"]]},
+  {s:"7.0 OTHER PART 7 SPECIAL INSTALLATIONS OR LOCATIONS", items:[
+    ["7.1","List all other special installations or locations present, if any (*Record separately the results of particular inspections applied)"]]},
+  {s:"8.0 PROSUMER’S LOW VOLTAGE ELECTRICAL INSTALLATION(S)", items:[
+    ["8.1","Where the installation includes additional requirements and recommendations relating to Chapter 82, additional inspection items should be added to the checklist"]]},
+  {s:"9.0 OTHER METHODS OF PROTECTION", note:"(Where any of the methods listed below are employed details are to be provided on separate sheets)", items:[
+    ["9.1","Non-conducting location (418.1)"],["9.2","Earth-free local equipotential bonding (418.2)"],["9.3","Electrical separation (Section 413; 418.3)"],
+    ["9.4","Double insulation (Section 412)"],["9.5","Reinforced insulation (Section 412)"]]}
+];
+const SEED = {
+  "meta": { "date": "12/11/2026", "serial": "00000001", "scheme": "NAPIT" },
+  "contractor": {
+    "name": "Sample Electrical Ltd",
+    "address": "1 Test Park, Testtown, AB1 2CD",
+    "tel": "07000 000000", "email": "info@example.com", "web": "www.example.com",
+    "enrolment_no": "00000"
+  },
+  "client": { "name": "C/o Example Lettings Ltd", "address": "1 Sample Street, Testtown, AB1 2CD", "email": "N/A" },
+  "reason": "Electrical installation conditions check prior to tenancy agreement",
+  "inspection_dates": "12/11/2026",
+  "installation": {
+    "occupier": "Tenant", "address": "12 Example Road, Testtown, AB1 2CD",
+    "premises": "Residential", "premises_other": "N/A",
+    "wiring_age_years": "30", "alterations": "No", "alterations_age": "N/A",
+    "records_available": "No", "last_inspection": "N/A", "alt_supply": "N/A"
+  },
+  "extent": {
+    "covered": "The whole of the electrical installation",
+    "agreed_limitations": "None.", "agreed_with": "Client.", "position": "N/A",
+    "operational_limitations": "None."
+  },
+  "summary": { "general_condition": "The electrical installation in good condition.", "overall": "SATISFACTORY" },
+  "next_inspection": { "date": "12/11/2031", "reasons": "N/A" },
+  "declaration": {
+    "inspector_name": "JOHN SMITH", "inspector_position": "Electrical Engineer", "inspector_date": "12/11/2026",
+    "authoriser_name": "John Smith", "authoriser_date": "12/11/2026"
+  },
+  "supply": {
+    "earthing": "TN-C-S (PME)", "current": "AC", "conductors": "1 phase (3 wire)",
+    "voltage": "240", "frequency": "50", "pfc_ka": "0.610", "ze_ohm": "0.21",
+    "ocpd_bs": "BS 1362", "ocpd_type": "Fuse HBC - Type 2", "ocpd_rating": "100", "ocpd_breaking": "N/A",
+    "polarity_confirmed": "N/A"
+  },
+  "particulars": {
+    "means_of_earthing": "Distributor's facility",
+    "electrode_type": "N/A", "electrode_resistance": "N/A", "electrode_location": "N/A", "max_demand_a": "100",
+    "earthing_conductor": { "material": "Copper", "csa": "16", "verified": true },
+    "bonding_conductor": { "material": "Copper", "csa": "10", "verified": true },
+    "bonding": { "water": true, "gas": true, "oil": false, "steel": false, "other": false, "lightning": false },
+    "main_switch": { "bs": "60947-3", "poles": "2", "supply_material": "Copper", "supply_csa": "25",
+      "voltage": "240", "current": "100", "rated_time_delay": "N/A", "rcd_current": "N/A", "rcd_time": "N/A", "rcd_type": "N/A" }
+  },
+  "observations": [
+    { "code": "C3", "text": "17th edition plastic consumer unit.", "photos": ["", ""] },
+    { "code": "C3", "text": "No SPD protection.", "photos": [] }
+  ],
+  "boards": [
+    {
+      "ref": "DB1", "zs": "0.21", "ipf": "1.281", "main_switch_bs": "60947", "rating": "100", "spd": "N/A",
+      "supply_csa": "25", "earth_csa": "16", "location": "Hall Cupboard", "phase_seq": "✓",
+      "supplied_from": "Mains", "phases": "Single", "ocpd_bs": "BS 1361 Fuse HBC - Type 2", "ocpd_rating": "100",
+      "circuits": [
+        ["1","Main Switch",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"500",null,null,null,null,null,null,null,null,null],
+        ["2","Main Switch",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"500",null,null,null,null,null,null,null,null,null],
+        ["3","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"16","✓",null],
+        ["4","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"16","✓",null],
+        ["5","Shower","A","B",null,"6","2.5","0.4","60898","B","40","6","0.87","61008","A","30","32",null,null,null,"0.32",null,"500",null,"999","999","999","✓","0.52","16","✓",null],
+        ["6","Bath, kit heater","A","B",null,"1.0","1.0","0.4","60898","B","6","6","5.82","61008","AC","30","6",null,null,null,"0.26",null,"500",null,"999","999","999","✓","0.47","16","✓",null],
+        ["7","Immersion Heater","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","16",null,null,null,"0.45",null,"500",null,"999","999","999","✓","0.67","16","✓",null],
+        ["8","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"23","✓",null],
+        ["9","R.C.D",null,null,null,null,null,"0.4",null,null,null,null,null,"61008","AC","30","63",null,null,null,null,null,null,null,null,null,null,"✓",null,"23","✓",null],
+        ["10","Sockets","A","B",null,"2.5","1.5","0.4","60898","B","32","6","1.10","61008","AC","30","32","0.46","0.46","0.67","0.3",null,"500",null,"999","999","999","✓","0.51","23","✓",null],
+        ["11","Cooker","A","B",null,"6","2.5","0.4","60898","B","32","6","1.10","61008","AC","30","32",null,null,null,"0.18",null,"500",null,"999","999","999","✓","0.39","23","✓",null],
+        ["12","Lights","A","B",null,"1.0","1.0","0.4","60898","B","6","6","5.82","61008","AC","30","6",null,null,null,"1.71",null,"500",null,"999","999","999","✓","0.47","23","✓",null],
+        ["13","Spare",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+      ]
+    },
+    {
+      "ref": "DB2 - Eco7", "zs": "Lim", "ipf": "Lim", "main_switch_bs": "60947", "rating": "100", "spd": "N/A",
+      "supply_csa": "25", "earth_csa": "16", "location": "Hall Cupboard", "phase_seq": "N/A",
+      "supplied_from": "Mains", "phases": "Single", "ocpd_bs": "BS 1361 Type 2b", "ocpd_rating": "100",
+      "circuits": [
+        ["1","Hall Heater","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.36",null,"500",null,"999","999","999","✓","0.57","Lim",null,null],
+        ["2","Lim","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.23",null,"500",null,"999","999","999","✓","0.44","Lim",null,null],
+        ["3","Lounge","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.29",null,"500",null,"999","999","999","✓","0.5","Lim",null,null],
+        ["4","Bed Heater","A","B",null,"2.5","1.5","0.4","60898","B","16","6","2.18","61008","AC","30","63",null,null,null,"0.22",null,"500",null,"999","999","999","✓","0.43","Lim",null,null],
+        ["5","Spare",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+        ["6","Spare",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+      ]
+    }
+  ],
+  "instruments": { "efli": "0000000", "insulation": "0000000", "continuity": "0000000", "rcd": "0000000", "mft": "0000000", "other": "N/A" },
+  "remarks": "",
+  "inspection": {
+    "1.1":"✓","1.2":"✓","1.3":"✓","1.4":"✓","1.5":"NV","1.6":"LIM",
+    "3.1":"✓","3.3":"✓","3.4":"✓","3.5":"✓","3.6":"✓","3.7":"✓","3.8":"✓",
+    "4.1":"✓","4.2":"✓","4.3":"C3","4.4":"✓","4.5":"✓","4.6":"✓","4.7":"✓","4.8":"✓","4.9":"✓",
+    "4.12":"✓","4.13":"✓","4.14":"✓","4.15":"✓","4.16":"✓","4.17":"✓","4.18":"✓","4.19":"C3","4.20":"✓","4.23":"✓","4.24":"✓",
+    "5.1":"✓","5.2":"✓","5.3":"✓","5.5":"✓","5.6":"✓","5.7":"✓","5.8":"✓","5.9":"✓","5.10":"✓",
+    "5.12a":"✓","5.12b":"✓","5.12c":"✓","5.12d":"✓","5.12e":"✓",
+    "5.13":"✓","5.14":"✓","5.15":"✓","5.16":"✓",
+    "5.17a":"✓","5.17b":"✓","5.17c":"✓","5.17d":"✓",
+    "5.18":"✓","5.19":"✓","5.20":"✓","5.21":"✓",
+    "6.1":"✓","6.5":"✓","6.6":"✓","6.7":"✓","6.8":"✓"
+  }
+};
+
+/* ---------- field model ---------- */
+const COLS=["ref","designation","wiring","method","points","live","cpc","maxdisc","ocpd_bs","ocpd_type","ocpd_rating","bc","max_zs","rcd_bs","rcd_type","idn","rcd_rating","r1","rn","r2","r1r2","R2","test_v","ir_ll","ir_ln","ir_le","ir_ne","polarity","zs","rcd_ms","rcd_btn","afdd"];
+const COL_LABEL=["circuit ref","designation","type of wiring (A-H,O)","reference method","points served","live csa mm²","cpc csa mm²","max disconnection time s","OCPD BS(EN)","OCPD type","OCPD rating A","breaking capacity kA","max permitted Zs Ω","RCD BS(EN)","RCD type","RCD IΔn mA","RCD rating A","ring r1","ring rn","ring r2","R1+R2 Ω","R2 Ω","IR test voltage V","IR live-live MΩ","IR live-neutral MΩ","IR live-earth MΩ","IR neutral-earth MΩ","polarity","measured Zs Ω","RCD time ms","RCD test button","AFDD test button"];
+const BOARD_F=["ref","zs","ipf","main_switch_bs","rating","spd","supply_csa","earth_csa","location","phase_seq","supplied_from","phases","ocpd_bs","ocpd_rating"];
+const SECTIONS=[
+ {id:"A",name:"person ordering",voice:false,f:["client.name","client.address","client.email"]},
+ {id:"B",name:"reason",voice:false,f:["reason","inspection_dates"]},
+ {id:"C",name:"installation",f:["installation.occupier","installation.address","installation.premises","installation.premises_other","installation.wiring_age_years","installation.alterations","installation.alterations_age","installation.records_available","installation.last_inspection","installation.alt_supply"]},
+ {id:"D",name:"extent & limits",f:["extent.covered","extent.agreed_limitations","extent.agreed_with","extent.position","extent.operational_limitations"]},
+ {id:"E",name:"summary",f:["summary.general_condition","summary.overall"]},
+ {id:"F",name:"next inspection",f:["next_inspection.date","next_inspection.reasons"]},
+ {id:"G",name:"declaration",f:["declaration.inspector_name","declaration.inspector_position","declaration.inspector_date","declaration.authoriser_name","declaration.authoriser_date"]},
+ {id:"I",name:"supply",f:["supply.earthing","supply.current","supply.conductors","supply.voltage","supply.frequency","supply.pfc_ka","supply.ze_ohm","supply.ocpd_bs","supply.ocpd_type","supply.ocpd_rating","supply.ocpd_breaking","supply.polarity_confirmed"]},
+ {id:"J",name:"particulars",f:["particulars.means_of_earthing","particulars.electrode_type","particulars.electrode_resistance","particulars.electrode_location","particulars.max_demand_a","particulars.earthing_conductor.material","particulars.earthing_conductor.csa","particulars.earthing_conductor.verified","particulars.bonding_conductor.material","particulars.bonding_conductor.csa","particulars.bonding_conductor.verified","particulars.bonding.water","particulars.bonding.gas","particulars.bonding.oil","particulars.bonding.steel","particulars.bonding.other","particulars.bonding.lightning","particulars.main_switch.bs","particulars.main_switch.poles","particulars.main_switch.supply_material","particulars.main_switch.supply_csa","particulars.main_switch.voltage","particulars.main_switch.current","particulars.main_switch.rated_time_delay","particulars.main_switch.rcd_current","particulars.main_switch.rcd_time","particulars.main_switch.rcd_type"]},
+ {id:"K",name:"observations",kind:"obs"},
+ {id:"DB",name:"boards & circuits",kind:"db"},
+ {id:"T",name:"instruments",f:["instruments.efli","instruments.insulation","instruments.continuity","instruments.rcd","instruments.mft","instruments.other","remarks"]},
+ {id:"N",name:"inspection schedule",kind:"insp"}
+];
+const PRIVATE=new Set(["client.name","client.address","client.email","reason","inspection_dates","installation.occupier","installation.address","declaration.inspector_name","declaration.authoriser_name"]);
+const ENUMS={"installation.premises":"Residential|Commercial|Industrial|Other","installation.alterations":"Yes|No|Not apparent","installation.records_available":"Yes|No",
+ "summary.overall":"SATISFACTORY|UNSATISFACTORY","supply.earthing":"TN-S|TN-C-S (PME)|TT|IT|TN-C|TN-C-S (PNB)","supply.current":"AC|DC",
+ "supply.conductors":"1 phase (2 wire)|2 phase (3 wire)|1 phase (3 wire)|3 phase (3 wire)|3 phase (4 wire)|2 wire|3 wire|Other",
+ "particulars.means_of_earthing":"Distributor's facility|Installation earth electrode"};
+const BOOL=f=>/verified$|\.bonding\.\w+$/.test(f);
+const INSP=[]; // flat list of [id,label]
+SCHEDULE.forEach((g,gi)=>g.items.forEach(it=>{ if(!it[2]) INSP.push({id:it[0],label:it[1],group:gi+1}); }));
+
+/* ---------- storage (device only) ---------- */
+const KEY="eicr.voice.reports.v1";
+let reports=[];
+function load(){ try{ reports=JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){ reports=null; }
+  if(!Array.isArray(reports)||!reports.length){ reports=[makeSample()]; save(); } }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(reports)); }catch(e){} }
+const clone=o=>JSON.parse(JSON.stringify(o));
+const today=()=>{const d=new Date();return [d.getDate(),d.getMonth()+1,d.getFullYear()].map(n=>String(n).padStart(2,"0")).join("/");};
+
+function makeSample(){
+  const d=clone(SEED);
+  d.boards.forEach(b=>b.circuits=b.circuits.map(r=>r.map(v=>v===null?"N/A":v)));
+  const ins={}; INSP.forEach(i=>ins[i.id]=d.inspection[i.id]||"N/A"); d.inspection=ins;
+  d.remarks="None.";
+  // leave part of it unfilled so the board shows work in progress
+  INSP.forEach(i=>{ if(i.group>=5) delete d.inspection[i.id]; });
+  const db2=d.boards[1]; db2.circuits.forEach(r=>{[20,23,24,25,26,27,28,29].forEach(c=>r[c]="");});
+  Object.keys(d.instruments).forEach(k=>d.instruments[k]="");
+  d.summary.general_condition=""; d.summary.overall=""; d.next_inspection.date="";
+  return {id:"sample",sample:true,created:Date.now(),updated:Date.now(),data:d};
+}
+function blankReport(f){
+  const s=SEED, d={meta:{date:today(),serial:String(Math.floor(1e7+Math.random()*9e7)),scheme:s.meta.scheme},contractor:clone(s.contractor),
+    client:{name:f.client,address:f.clientAddr,email:""},reason:f.reason,inspection_dates:today(),
+    installation:{},extent:{},summary:{},next_inspection:{},declaration:{},supply:{},
+    particulars:{earthing_conductor:{},bonding_conductor:{},bonding:{},main_switch:{}},
+    observations:[],boards:[{ref:"DB1",circuits:[]}],instruments:{},remarks:"",inspection:{}};
+  d.installation.address=f.addr; d.installation.occupier=f.occ;
+  return {id:"r"+Date.now(),created:Date.now(),updated:Date.now(),data:d};
+}
+
+/* ---------- path helpers ---------- */
+const getP=(o,p)=>p.split(".").reduce((a,k)=>a==null?undefined:a[k],o);
+function setP(o,p,v){const ks=p.split(".");let a=o;ks.slice(0,-1).forEach(k=>{if(a[k]==null||typeof a[k]!=="object")a[k]={};a=a[k];});a[ks.at(-1)]=v;}
+const isEmpty=v=>v===undefined||v===null||v==="";
+const num=v=>{const n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));return isNaN(n)?null:n;};
+
+/* ---------- cell keys & status ---------- */
+let cur=null, picked=null, hot=new Set();
+function keyVal(k){ const d=cur.data, p=k.split(":");
+  if(p[0]==="f") return getP(d,p[1]);
+  if(p[0]==="o") return d.observations[+p[1]];
+  if(p[0]==="b") return (d.boards[+p[1]]||{})[p[2]];
+  if(p[0]==="c") return ((d.boards[+p[1]]||{}).circuits||[])[+p[2]]?.[+p[3]];
+  if(p[0]==="i") return d.inspection[p[1]];
+}
+function keyLabel(k){ const d=cur.data,p=k.split(":");
+  if(p[0]==="f") return p[1];
+  if(p[0]==="o") return "observation "+(+p[1]+1);
+  if(p[0]==="b") return (d.boards[+p[1]].ref||"DB")+" · board "+p[2];
+  if(p[0]==="c"){ const r=d.boards[+p[1]].circuits[+p[2]]; return `${d.boards[+p[1]].ref} · circuit ${r[0]} ${r[1]?"("+r[1]+")":""} · ${COL_LABEL[+p[3]]}`; }
+  if(p[0]==="i"){ const it=INSP.find(x=>x.id===p[1]); return "N "+p[1]+" · "+(it?it.label:""); }
+}
+function check(k){ // returns [status, message]
+  const v=keyVal(k), p=k.split(":");
+  if(p[0]==="o"){ if(!v) return ["empty",""]; return /C1|C2/.test(v.code)?["issue",v.code+" observation"]:["check",v.code+" observation"]; }
+  if(isEmpty(v)) return ["empty",""];
+  const s=String(v);
+  if(p[0]==="i"){ if(/^C[12]$/.test(s)) return ["issue","unacceptable ("+s+")"]; if(/^(C3|FI)$/.test(s)) return ["check","coded "+s]; }
+  if(p[0]==="c"){ const r=cur.data.boards[+p[1]].circuits[+p[2]], c=+p[3];
+    if(c===28){ const zs=num(s), mx=num(r[12]); if(zs!=null&&mx!=null&&zs>mx) return ["issue",`Zs ${zs} exceeds max permitted ${mx}`]; }
+    if(c>=23&&c<=26){ const ir=num(s); if(ir!=null&&ir<1) return ["issue",`insulation ${ir} MΩ is below 1 MΩ`]; if(ir!=null&&ir<2) return ["check",`insulation ${ir} MΩ is low`]; }
+    if(c===29){ const t=num(s); if(t!=null&&t>300) return ["issue",`RCD ${t} ms is over 300 ms`]; if(t!=null&&t>40) return ["check",`RCD ${t} ms, check test current`]; }
+    if(c===27&&/^x|fail/i.test(s)) return ["issue","polarity failed"];
+  }
+  if(k==="f:summary.overall"){ const bad=cur.data.observations.some(o=>/C1|C2/.test(o.code)); if(bad&&s==="SATISFACTORY") return ["issue","C1/C2 present but marked satisfactory"]; }
+  return ["ok",""];
+}
+function allKeys(){ const d=cur.data, out=[];
+  SECTIONS.forEach(s=>{
+    if(s.f) s.f.forEach(f=>out.push("f:"+f));
+    if(s.kind==="obs") d.observations.forEach((o,i)=>out.push("o:"+i));
+    if(s.kind==="db") d.boards.forEach((b,bi)=>{ BOARD_F.forEach(f=>out.push(`b:${bi}:${f}`)); b.circuits.forEach((r,ci)=>COLS.forEach((c,x)=>{ if(x) out.push(`c:${bi}:${ci}:${x}`); })); });
+    if(s.kind==="insp") INSP.forEach(i=>out.push("i:"+i.id));
+  }); return out; }
+
+/* ---------- render ---------- */
+const $=id=>document.getElementById(id);
+const escH=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function fillPct(r){ const keep=cur; cur=r; const ks=allKeys(); const n=ks.filter(k=>check(k)[0]!=="empty").length; cur=keep; return {n,t:ks.length,p:ks.length?Math.round(n/ks.length*100):0}; }
+
+function renderHome(){
+  const q=$("q").value.trim().toLowerCase();
+  const rows=reports.slice().sort((a,b)=>b.updated-a.updated).filter(r=>!q||(r.data.installation.address+" "+r.data.meta.serial).toLowerCase().includes(q));
+  $("hmeta").textContent=`${reports.length} on device`;
+  $("list").innerHTML=rows.length?rows.map(r=>{ const f=fillPct(r), on=Math.round(f.p/10);
+    return `<li><button data-id="${r.id}"><span class="a">${escH(r.data.installation.address||"untitled")}</span>
+      <span class="p"><span class="progress"><i style="width:${f.p}%"></i></span>${f.p}%</span>
+      <span class="s">${r.sample?"Sample · ":""}EICR · #${escH(r.data.meta.serial)} · ${new Date(r.updated).toLocaleDateString("en-GB")}</span></button></li>`;}).join("")
+    :`<li class="empty-list">no reports match “${escH(q)}”</li>`;
+}
+
+function cellHTML(k,extra=""){ const [st]=check(k), v=keyVal(k);
+  const na=st==="ok"&&/^N\/A$/i.test(String(v));
+  return `<button class="cell ${st==="empty"?"":st}${na?" na":""}${hot.has(k)?" hot":""}${picked===k?" picked":""}${extra}" data-k="${k}" aria-label="${escH(keyLabel(k))}"></button>`; }
+
+function renderReport(){
+  const d=cur.data;
+  $("rAddr").textContent=d.installation.address||"untitled";
+  $("rTpl").textContent=`EICR · BS 7671 · #${d.meta.serial}`;
+  const f=fillPct(cur); $("pct").textContent=f.p+"%"; $("meter").style.width=f.p+"%"; $("counts").textContent=`${f.n}/${f.t}`;
+  const h=allKeys().map(k=>cellHTML(k)).join("");
+  $("grid").innerHTML=h;
+  fitGrid();
+  renderDetail();
+}
+function fitGrid(){
+  const g=$("grid"); if($("report").hidden) return;
+  const n=g.children.length||1, w=g.clientWidth-16;
+  const top=g.getBoundingClientRect().top, bar=$("talkBar").getBoundingClientRect().height||90;
+  const leg=16;
+  const h=Math.max(160,innerHeight-top-bar-leg-8)-16;
+  let s=40,gap=2,cols=1;
+  for(;s>=3;s-=.25){ gap=s>=9?2:1; cols=Math.max(1,Math.floor((w+gap)/(s+gap))); if(Math.ceil(n/cols)*(s+gap)-gap<=h) break; }
+  g.style.height=(h+16)+"px"; g.style.gap=gap+"px";
+  g.style.gridTemplateColumns=`repeat(${cols},${s}px)`; g.style.gridAutoRows=s+"px";
+}
+addEventListener("resize",()=>{ if(cur) fitGrid(); });
+function renderDetail(){
+  if(!picked){ $("detailWrap").hidden=true; return; }
+  $("detailWrap").hidden=false;
+  const v=keyVal(picked), p=picked.split(":"), [st,msg]=check(picked);
+  $("dKey").textContent=picked.replace(/^f:/,"")+(p[0]==="f"&&ENUMS[p[1]]?"  ["+ENUMS[p[1]]+"]":"")+(p[0]==="i"?"  [✓|N/A|C1|C2|C3|FI|LIM|NV]":"");
+  $("dLabel").textContent=keyLabel(picked);
+  $("dVal").value=p[0]==="o"?(v?v.code+" "+v.text:""):(isEmpty(v)?"":String(v));
+  $("dMsg").className="msg "+st; $("dMsg").textContent=msg||(st==="empty"?"empty, say it or type it":"");
+}
+function setKey(k,val){ const d=cur.data,p=k.split(":");
+  if(p[0]==="f") setP(d,p[1],BOOL(p[1])?(/^(true|yes|y|✓|ok)$/i.test(val)?true:(val===""?"":false)):val);
+  else if(p[0]==="o"){ const m=String(val).match(/^\s*(C1|C2|C3|FI)\s*(.*)$/i); if(val==="") d.observations.splice(+p[1],1); else if(m) d.observations[+p[1]]={...(d.observations[+p[1]]||{photos:[]}),code:m[1].toUpperCase(),text:m[2]}; }
+  else if(p[0]==="b") d.boards[+p[1]][p[2]]=val;
+  else if(p[0]==="c") d.boards[+p[1]].circuits[+p[2]][+p[3]]=val;
+  else if(p[0]==="i") d.inspection[p[1]]=val;
+}
+function touch(){ cur.updated=Date.now(); if(cur.sample){} save(); }
+
+/* ---------- log ---------- */
+let toastT=0;
+function toast(cls,txt){ const t=$("toast"); t.className="toast "+cls; t.textContent=txt; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,cls==="a"?3500:6000); }
+function log(cls,txt){ if(cls!=="u") toast(cls,txt); const el=document.createElement("div"); el.className=cls; el.textContent=txt; $("log").prepend(el); while($("log").children.length>40) $("log").lastChild.remove(); }
+
+/* ---------- AI parsing (only technical text is sent) ---------- */
+let sample=null, dict=null, tts=null;
+function catalog(){
+  const d=cur.data;
+  const fields=SECTIONS.filter(s=>s.f).flatMap(s=>s.f).filter(f=>!PRIVATE.has(f)).map(f=>f+(ENUMS[f]?` [${ENUMS[f]}]`:BOOL(f)?" [true|false]":"")).join("\n");
+  const insp=SCHEDULE.map((g,gi)=>`${gi+1}: `+g.items.filter(i=>!i[2]).map(i=>`${i[0]} ${i[1].replace(/\s*\(.*$/,"").slice(0,48)}`).join("; ")).join("\n");
+  const boards=d.boards.map(b=>`${b.ref}: `+(b.circuits.length?b.circuits.map(r=>r[0]+" "+(r[1]||"")).join(", "):"(no circuits)")).join("\n");
+  return {fields,insp,boards};
+}
+let lastBoard="DB1";
+function prompt(utter){ const c=catalog();
+return `Convert an electrician's spoken site note into edits for a UK EICR (BS 7671). Reply with JSON only, no prose:
+{"ops":[...],"say":"read-back under 14 words","unclear":"anything you could not map, else empty string"}
+Op shapes:
+{"op":"set","path":"<field path>","value":"..."}
+{"op":"board","board":"<DB ref>","field":"<board field>","value":"..."}
+{"op":"circuit","board":"<DB ref>","ref":"<circuit number>","field":"<circuit field>","value":"..."}
+{"op":"insp","id":"<item id, or a section number like \\"2\\" for all its items>","value":"✓|N/A|C1|C2|C3|FI|LIM|NV"}
+{"op":"obs","code":"C1|C2|C3|FI","text":"short observation"}
+Rules: all values are strings without units. ok/good/pass/tick/fine = "✓" for inspection items and polarity. "n a"/"not applicable" = "N/A". Insulation "over range"/"greater than 999" = "999". Speech-to-text may garble numbers ("nought point five two" = "0.52", "point two one" = "0.21"). If no board is named use "${lastBoard}". To add a circuit, send its designation with field "designation". Max permitted Zs for B-type MCBs: B6 7.28→5.82 at 80%, B16 2.18, B32 1.10, B40 0.87 (80% values); fill max_zs only if spoken. Never invent values that were not spoken. Ignore names, addresses and phone numbers.
+Field paths:
+${c.fields}
+Board fields: ${BOARD_F.join(", ")}
+Circuit fields: ${COLS.slice(1).map((x,i)=>x+"="+COL_LABEL[i+1]).join(", ")}
+Inspection items by section:
+${c.insp}
+Current boards and circuits:
+${c.boards}
+Note: """${utter}"""`; }
+
+function applyOps(res){
+  const d=cur.data; hot=new Set(); let n=0; const bad=[];
+  const findBoard=ref=>{ ref=String(ref||lastBoard).trim(); const norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,"");
+    let i=d.boards.findIndex(b=>norm(b.ref).startsWith(norm(ref))||norm(ref).startsWith(norm(b.ref)));
+    if(i<0){ d.boards.push({ref,circuits:[]}); i=d.boards.length-1; } lastBoard=d.boards[i].ref; return i; };
+  const known=new Set(SECTIONS.filter(s=>s.f).flatMap(s=>s.f));
+  (res.ops||[]).forEach(o=>{ const v=String(o.value??"").trim();
+    if(o.op==="set"&&known.has(o.path)&&!PRIVATE.has(o.path)){ setKey("f:"+o.path,v); hot.add("f:"+o.path); n++; }
+    else if(o.op==="board"&&BOARD_F.includes(o.field)){ const bi=findBoard(o.board); d.boards[bi][o.field]=v; hot.add(`b:${bi}:${o.field}`); n++; }
+    else if(o.op==="circuit"){ const x=COLS.indexOf(o.field); const bi=findBoard(o.board); const b=d.boards[bi];
+      let ci=b.circuits.findIndex(r=>String(r[0])===String(o.ref));
+      if(ci<0){ const r=Array(32).fill(""); r[0]=String(o.ref); b.circuits.push(r); b.circuits.sort((a,c)=>(num(a[0])??0)-(num(c[0])??0)); ci=b.circuits.findIndex(r=>String(r[0])===String(o.ref)); }
+      if(x>0){ b.circuits[ci][x]=v; hot.add(`c:${bi}:${ci}:${x}`); n++; } }
+    else if(o.op==="insp"){ const id=String(o.id); const hit=INSP.filter(i=>/^\d+$/.test(id)?i.id.split(".")[0]===id:(i.id===id||(i.id.startsWith(id)&&/[a-e]$/.test(i.id)&&i.id.length===id.length+1)));
+      hit.forEach(i=>{ d.inspection[i.id]=v; hot.add("i:"+i.id); n++; }); if(!hit.length) bad.push("item "+id); }
+    else if(o.op==="obs"&&/^(C1|C2|C3|FI)$/.test(o.code)){ d.observations.push({code:o.code,text:String(o.text||""),photos:[]}); hot.add("o:"+(d.observations.length-1)); n++; }
+    else bad.push(JSON.stringify(o).slice(0,60));
+  });
+  touch(); renderReport();
+  const issues=[...hot].map(k=>check(k)).filter(c=>c[0]==="issue"||c[0]==="check");
+  return {n,bad,issues};
+}
+
+async function send(){
+  const text=$("say").value.trim(); if(!text) return;
+  $("say").value=""; $("sayDrawer").hidden=true; $("caption").hidden=true; log("u",text);
+  if(!sample){ log("w","AI isn't available in this view. Tap a square to type a value."); return; }
+  const tb=$("talk"); tb.disabled=true; $("talkLbl").textContent="Thinking…";
+  try{
+    const res=await sample.json(prompt(text),{modelTier:"quick",cache:false});
+    const r=applyOps(res);
+    log("a",(res.say||"done")+`  [${r.n} field${r.n===1?"":"s"}]`);
+    r.issues.forEach(i=>log(i[0]==="issue"?"e":"w",i[1]));
+    if(res.unclear) log("w","unclear: "+res.unclear);
+    if(r.bad.length) log("w","skipped: "+r.bad.join(", "));
+    if(tts&&res.say) tts.speak(res.say).catch(()=>{});
+  }catch(e){
+    if(e&&e.code==="not_granted"){ sample=null; log("e","AI access was declined. Tap cells to type values."); }
+    else if(e&&e.code==="rate_limited") log("e","Too many notes at once. Wait a few seconds and send again.");
+    else log("e","Could not parse that note ("+(e&&e.code||"error")+"). Try again or tap a cell.");
+  }finally{ tb.disabled=false; updateTalk(); }
+}
+
+/* ---------- voice ---------- */
+let listening=false, finalBuf="";
+function updateTalk(){ const t=$("talk"); if(t.disabled) return;
+  t.classList.toggle("btn-destructive",listening); t.classList.toggle("live",listening); t.classList.toggle("btn-primary",!listening);
+  $("talkLbl").textContent=listening?"Stop":"Talk"; }
+$("talk").addEventListener("click",()=>{
+  if(dict){
+    if(listening){ dict.stop().catch(()=>{}); return; }
+    finalBuf=""; $("say").value=""; listening=true; updateTalk();
+    $("caption").textContent="Listening…"; $("caption").hidden=false;
+    dict.start({language:"en-GB"}).catch(e=>{ listening=false; $("caption").hidden=true; updateTalk();
+      if(e&&e.code==="not_granted"){ dict=null; log("w","Microphone declined. Use the keyboard mic instead."); } });
+    return; }
+  $("sayDrawer").hidden=false; setTimeout(()=>$("say").focus(),50);
+});
+$("saySend").addEventListener("click",send);
+$("sayCancel").addEventListener("click",()=>{ $("sayDrawer").hidden=true; });
+$("sayDrawer").addEventListener("click",e=>{ if(e.target.id==="sayDrawer") $("sayDrawer").hidden=true; });
+$("say").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); } });
+$("detailWrap").addEventListener("click",e=>{ if(e.target.id==="detailWrap"){ picked=null; renderReport(); } });
+
+/* ---------- navigation & events ---------- */
+function openReport(id){ cur=reports.find(r=>r.id===id); if(!cur) return; picked=null; hot=new Set(); $("log").innerHTML="";
+  lastBoard=cur.data.boards[0]?.ref||"DB1";
+  $("home").hidden=true; $("homeBar").hidden=true; $("report").hidden=false; $("talkBar").hidden=false; $("delConfirm").hidden=true;
+  renderReport(); scrollTo(0,0); }
+function goHome(){ cur=null; ["sayDrawer","detailWrap","toast"].forEach(i=>$(i).hidden=true); $("report").hidden=true; $("talkBar").hidden=true; $("home").hidden=false; $("homeBar").hidden=false; renderHome(); }
+$("list").addEventListener("click",e=>{ const b=e.target.closest("button[data-id]"); if(b) openReport(b.dataset.id); });
+$("q").addEventListener("input",renderHome);
+$("back").addEventListener("click",goHome);
+$("grid").addEventListener("click",e=>{ const c=e.target.closest(".cell[data-k]"); if(!c) return; picked=picked===c.dataset.k?null:c.dataset.k; renderReport(); });
+$("dSave").addEventListener("click",()=>{ if(!picked) return; setKey(picked,$("dVal").value.trim()); hot=new Set([picked]); touch(); picked=null; renderReport(); });
+$("dClose").addEventListener("click",()=>{ picked=null; renderReport(); });
+$("dVal").addEventListener("keydown",e=>{ if(e.key==="Enter") $("dSave").click(); });
+$("newBtn").addEventListener("click",()=>{ $("newForm").reset(); $("newSheet").hidden=false; setTimeout(()=>$("nAddr").focus(),50); });
+$("newCancel").addEventListener("click",()=>$("newSheet").hidden=true);
+$("newSheet").addEventListener("click",e=>{ if(e.target.id==="newSheet") $("newSheet").hidden=true; });
+$("newForm").addEventListener("submit",e=>{ e.preventDefault();
+  const r=blankReport({addr:$("nAddr").value.trim(),occ:$("nOcc").value.trim(),client:$("nClient").value.trim(),clientAddr:$("nClientAddr").value.trim(),reason:$("nReason").value});
+  reports.push(r); save(); $("newSheet").hidden=true; openReport(r.id); });
+$("del").addEventListener("click",()=>$("delConfirm").hidden=false);
+$("delYes").addEventListener("click",()=>{ reports=reports.filter(r=>r!==cur); if(!reports.length) reports=[makeSample()]; save(); goHome(); });
+
+/* ---------- export ---------- */
+let exportHTML="", exportName="";
+$("exp").addEventListener("click",async()=>{
+  const f=fillPct(cur);
+  try{
+    const tpl=await (await fetch("eicr-template.html")).text();
+    const data=clone(cur.data); data.inspection=Object.fromEntries(Object.entries(data.inspection).filter(([k,v])=>v));
+    exportHTML=tpl.replace(/(<script type="application\/json" id="report-data">)[\s\S]*?(<\/script>)/,(m,a,b)=>a+"\n"+JSON.stringify(data,null,1).replace(/<\//g,"<\\/")+"\n"+b);
+    exportName=`EICR_${data.meta.serial}_${(data.installation.address||"report").replace(/[^A-Za-z0-9]+/g,"_").slice(0,40)}.html`;
+    $("pInfo").textContent=`${f.p}% filled · ${f.t-f.n} empty fields show as N/A`;
+    $("pFrame").srcdoc=exportHTML; $("preview").hidden=false;
+  }catch(e){ log("e","Could not load the report template. Check your connection and try again."); }
+});
+$("pClose").addEventListener("click",()=>{ $("preview").hidden=true; $("pFrame").srcdoc=""; });
+$("pSave").addEventListener("click",async()=>{
+  const dl=window.claude&&await claude.use("downloads");
+  if(!dl){ $("pInfo").textContent="Saving files is not available in this view."; return; }
+  try{ await dl.save({filename:exportName,data:new Blob([exportHTML],{type:"text/html"})}); $("pInfo").textContent="Saved. Open it on the device to print or email as PDF."; }
+  catch(e){ $("pInfo").textContent=e&&e.code==="declined"?"Save cancelled.":"Could not save ("+(e&&e.code||"error")+")."; }
+});
+
+/* ---------- boot ---------- */
+load(); renderHome();
+if(window.claude&&claude.use){
+  claude.use("sample").then(s=>{ sample=s; });
+  claude.use("tts").then(t=>{ tts=t; });
+  claude.use("dictation").then(d=>{ dict=d; if(!d){ updateTalk(); return; }
+    d.onPartial(({text})=>{ $("say").value=(finalBuf+" "+text).trim(); $("caption").textContent=$("say").value||"Listening…"; });
+    d.onFinal(({text})=>{ finalBuf=(finalBuf+" "+text).trim(); $("say").value=finalBuf; $("caption").textContent=finalBuf; });
+    d.onState(({state})=>{ if(state==="idle"&&listening){ listening=false; updateTalk(); if($("say").value.trim()) send(); else $("caption").hidden=true; } else updateTalk(); });
+    updateTalk(); });
+}
+</script>
+
+</body></html>
